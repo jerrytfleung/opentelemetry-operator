@@ -54,12 +54,14 @@ func TestUpgrade(t *testing.T) {
 		AutoInstrumentationPythonImage:      "python:1",
 		AutoInstrumentationDotNetImage:      "dotnet:1",
 		AutoInstrumentationGoImage:          "go:1",
+		AutoInstrumentationPhpImage:         "php:1",
 		AutoInstrumentationApacheHttpdImage: "apache-httpd:1",
 		AutoInstrumentationNginxImage:       "nginx:1",
 		EnableApacheHttpdInstrumentation:    true,
 		EnableDotNetAutoInstrumentation:     true,
 		EnableGoAutoInstrumentation:         true,
 		EnableNginxAutoInstrumentation:      true,
+		EnablePhpAutoInstrumentation:        true,
 		EnablePythonAutoInstrumentation:     true,
 		EnableNodeJSAutoInstrumentation:     true,
 		EnableJavaAutoInstrumentation:       true,
@@ -75,6 +77,7 @@ func TestUpgrade(t *testing.T) {
 	assert.Equal(t, "python:1", inst.Spec.Python.Image)
 	assert.Equal(t, "dotnet:1", inst.Spec.DotNet.Image)
 	assert.Equal(t, "go:1", inst.Spec.Go.Image)
+	assert.Equal(t, "php:1", inst.Spec.Php.Image)
 	assert.Equal(t, "apache-httpd:1", inst.Spec.ApacheHttpd.Image)
 	assert.Equal(t, "nginx:1", inst.Spec.Nginx.Image)
 	err = k8sClient.Create(context.Background(), inst)
@@ -86,12 +89,14 @@ func TestUpgrade(t *testing.T) {
 		AutoInstrumentationPythonImage:      "python:2",
 		AutoInstrumentationDotNetImage:      "dotnet:2",
 		AutoInstrumentationGoImage:          "go:2",
+		AutoInstrumentationPhpImage:         "php:2",
 		AutoInstrumentationApacheHttpdImage: "apache-httpd:2",
 		AutoInstrumentationNginxImage:       "nginx:2",
 		EnableApacheHttpdInstrumentation:    true,
 		EnableDotNetAutoInstrumentation:     true,
 		EnableGoAutoInstrumentation:         true,
 		EnableNginxAutoInstrumentation:      true,
+		EnablePhpAutoInstrumentation:        true,
 		EnablePythonAutoInstrumentation:     true,
 		EnableNodeJSAutoInstrumentation:     true,
 		EnableJavaAutoInstrumentation:       true,
@@ -117,6 +122,8 @@ func TestUpgrade(t *testing.T) {
 	assert.Equal(t, "dotnet:2", updated.Spec.DotNet.Image)
 	assert.Equal(t, "go:2", updated.Annotations[constants.AnnotationDefaultAutoInstrumentationGo])
 	assert.Equal(t, "go:2", updated.Spec.Go.Image)
+	assert.Equal(t, "php:2", updated.Annotations[constants.AnnotationDefaultAutoInstrumentationPhp])
+	assert.Equal(t, "php:2", updated.Spec.Php.Image)
 	assert.Equal(t, "apache-httpd:2", updated.Annotations[constants.AnnotationDefaultAutoInstrumentationApacheHttpd])
 	assert.Equal(t, "apache-httpd:2", updated.Spec.ApacheHttpd.Image)
 	assert.Equal(t, "nginx:2", updated.Annotations[constants.AnnotationDefaultAutoInstrumentationNginx])
@@ -159,6 +166,7 @@ func TestUpgradeBlockedForUnupgradableVersion(t *testing.T) {
 		AutoInstrumentationPythonImage:      "python:1",
 		AutoInstrumentationDotNetImage:      "dotnet:1",
 		AutoInstrumentationGoImage:          "go:1",
+		AutoInstrumentationPhpImage:         "php:1",
 		AutoInstrumentationApacheHttpdImage: "apache-httpd:1",
 		AutoInstrumentationNginxImage:       "nginx:1",
 		EnableApacheHttpdInstrumentation:    true,
@@ -185,10 +193,12 @@ func TestUpgradeBlockedForUnupgradableVersion(t *testing.T) {
 		AutoInstrumentationPythonImage:      "python:2",
 		AutoInstrumentationDotNetImage:      "dotnet:2",
 		AutoInstrumentationGoImage:          "go:2",
+		AutoInstrumentationPhpImage:         "php:2",
 		AutoInstrumentationApacheHttpdImage: "apache-httpd:2",
 		AutoInstrumentationNginxImage:       "nginx:2",
 		EnableApacheHttpdInstrumentation:    true,
 		EnableDotNetAutoInstrumentation:     true,
+		EnablePhpAutoInstrumentation:        true,
 		EnableGoAutoInstrumentation:         true,
 		EnableNginxAutoInstrumentation:      true,
 		EnablePythonAutoInstrumentation:     true,
@@ -258,11 +268,13 @@ func TestUpgradeClearsStaleBlockedStatus(t *testing.T) {
 		AutoInstrumentationNodeJSImage:      "nodejs:1",
 		AutoInstrumentationPythonImage:      "python:1",
 		AutoInstrumentationDotNetImage:      "dotnet:1",
+		AutoInstrumentationPhpImage:         "php:1",
 		AutoInstrumentationGoImage:          "go:1",
 		AutoInstrumentationApacheHttpdImage: "apache-httpd:1",
 		AutoInstrumentationNginxImage:       "nginx:1",
 		EnableApacheHttpdInstrumentation:    true,
 		EnableDotNetAutoInstrumentation:     true,
+		EnablePhpAutoInstrumentation:        true,
 		EnableGoAutoInstrumentation:         true,
 		EnableNginxAutoInstrumentation:      true,
 		EnablePythonAutoInstrumentation:     true,

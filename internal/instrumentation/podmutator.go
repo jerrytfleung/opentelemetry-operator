@@ -46,6 +46,7 @@ type languageInstrumentations struct {
 	NodeJS      instrumentationWithContainers
 	Python      instrumentationWithContainers
 	DotNet      instrumentationWithContainers
+	Php         instrumentationWithContainers
 	ApacheHttpd instrumentationWithContainers
 	Nginx       instrumentationWithContainers
 	Go          instrumentationWithContainers
@@ -58,6 +59,7 @@ func instrumentationsList(langInsts *languageInstrumentations) []*instrumentatio
 		&langInsts.NodeJS,
 		&langInsts.Python,
 		&langInsts.DotNet,
+		&langInsts.Php,
 		&langInsts.ApacheHttpd,
 		&langInsts.Nginx,
 		&langInsts.Go,
@@ -171,6 +173,10 @@ func (langInsts *languageInstrumentations) setLanguageSpecificContainers(ns, pod
 			annotation: annotationInjectGoContainersName,
 		},
 		{
+			iwc:        &langInsts.Php,
+			annotation: annotationInjectPhpContainersName,
+		},
+		{
 			iwc:        &langInsts.ApacheHttpd,
 			annotation: annotationInjectApacheHttpdContainersName,
 		},
@@ -276,6 +282,19 @@ func (pm *instPodMutator) Mutate(ctx context.Context, ns corev1.Namespace, pod c
 	} else {
 		logger.Error(nil, "support for .NET auto instrumentation is not enabled")
 		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for .NET auto instrumentation is not enabled")
+	}
+
+	if inst, err = pm.getInstrumentationInstance(ctx, ns, pod, annotationInjectPhp); err != nil {
+		// we still allow the pod to be created, but we log a message to the operator's logs
+		logger.Error(err, "failed to select an OpenTelemetry Instrumentation instance for this pod")
+		return pod, err
+	}
+	if pm.config.EnablePhpAutoInstrumentation || inst == nil {
+		insts.Php.Instrumentation = inst
+		insts.Php.AdditionalAnnotations = map[string]string{annotationPhpPlatform: annotationValue(ns.ObjectMeta, pod.ObjectMeta, annotationPhpPlatform)}
+	} else {
+		logger.Error(nil, "support for PHP auto instrumentation is not enabled")
+		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for PHP auto instrumentation is not enabled")
 	}
 
 	if inst, err = pm.getInstrumentationInstance(ctx, ns, pod, annotationInjectGo); err != nil {

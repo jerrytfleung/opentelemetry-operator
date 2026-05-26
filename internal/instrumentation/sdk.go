@@ -63,6 +63,9 @@ func (i *sdkInjector) inject(ctx context.Context, insts languageInstrumentations
 	if insts.Go.Instrumentation != nil {
 		pod = i.injectGo(ctx, insts.Go, ns, pod, cfg)
 	}
+	if insts.Php.Instrumentation != nil {
+		pod = i.injectPhp(ctx, insts.Php, ns, pod, cfg)
+	}
 	if insts.ApacheHttpd.Instrumentation != nil {
 		pod = i.injectApacheHttpd(ctx, insts.ApacheHttpd, ns, pod)
 	}
@@ -202,6 +205,31 @@ func (i *sdkInjector) injectGo(ctx context.Context, inst instrumentationWithCont
 			i.logger.Info("Skipping Go SDK injection", "reason", "OTEL_GO_AUTO_TARGET_EXE not set", "container", containerName)
 			pod = origPod
 		}
+	}
+
+	return pod
+}
+
+func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithContainers, ns corev1.Namespace, pod corev1.Pod, cfg config.Config) corev1.Pod {
+	otelinst := *inst.Instrumentation
+	i.logger.V(1).Info("injecting PHP instrumentation into pod", "otelinst-namespace", otelinst.Namespace, "otelinst-name", otelinst.Name)
+
+	platform := inst.AdditionalAnnotations[annotationPhpPlatform]
+	containers := containersToInstrument(&inst, &pod)
+
+	if len(containers) > 0 {
+		for _, container := range containers {
+			if err := injectPhpSDKToContainer(otelinst.Spec.Php, container, platform); err != nil {
+				i.logger.Info("Skipping PHP SDK injection", "reason", err.Error(), "container", container.Name)
+			} else {
+				i.injectCommonEnvVar(otelinst, container)
+				i.injectDefaultPhpEnvVars(container)
+				pod = i.injectCommonSDKConfig(ctx, otelinst, ns, pod, container, container)
+			}
+		}
+
+		pod = injectPhpSDKToPod(otelinst.Spec.Php, pod, containers[0].Name, platform, otelinst.Spec)
+		pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpInitContainerName)
 	}
 
 	return pod
@@ -406,6 +434,11 @@ func (*sdkInjector) injectDefaultJavaEnvVars(container *corev1.Container, javaSp
 func (*sdkInjector) injectDefaultNodeJSEnvVars(container *corev1.Container) {
 	envVars := getDefaultNodeJSEnvVars(container)
 	container.Env = appendOrReplace(container.Env, envVars...)
+}
+
+// injectDefaultPhpEnvVars injects default environment variables for PHP.
+func (*sdkInjector) injectDefaultPhpEnvVars(container *corev1.Container) {
+	container.Env = appendIfNotSet(container.Env, getDefaultPhpEnvVars()...)
 }
 
 // injectDefaultPythonEnvVars injects default environment variables for Python.

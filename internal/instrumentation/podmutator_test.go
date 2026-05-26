@@ -2804,7 +2804,7 @@ func TestMutatePod(t *testing.T) {
 			},
 			config: config.Config{
 				EnableInstrumentationCRDs:   true,
-				EnableGoAutoInstrumentation: truee,
+				EnableGoAutoInstrumentation: true,
 			},
 		},
 		{
