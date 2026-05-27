@@ -1714,7 +1714,7 @@ func TestMutatePod(t *testing.T) {
 					Namespace: "php-disabled",
 				},
 				Spec: v1alpha1.InstrumentationSpec{
-					Python: v1alpha1.Python{
+					PHP: v1alpha1.Php{
 						Image: "otel/php:1",
 						Env:   []corev1.EnvVar{},
 					},
