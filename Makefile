@@ -12,19 +12,19 @@ TARGETALLOCATOR_VERSION ?= $(shell awk -F= '/^targetallocator=/ {print $$2}' ver
 OPERATOR_OPAMP_BRIDGE_VERSION ?= "$(shell awk -F= '/^operator-opamp-bridge/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_JAVA_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-java=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_NODEJS_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-nodejs=/ {print $$2}' versions.txt)"
+DEFAULT_INSTRUMENTATION_PHP_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-php=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_PYTHON_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-python=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_DOTNET_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-dotnet=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_GO_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-go=/ {print $$2}' versions.txt)"
-DEFAULT_INSTRUMENTATION_PHP_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-php=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_APACHE_HTTPD_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-apache-httpd=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_NGINX_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-nginx=/ {print $$2}' versions.txt)"
 
 # Actual versions used for publishing instrumentation images
 INSTRUMENTATION_JAVA_VERSION ?= "$(shell cat autoinstrumentation/java/version.txt)"
 INSTRUMENTATION_NODEJS_VERSION ?= "$(shell grep -o '"@opentelemetry/auto-instrumentations-node": "[^"]*' autoinstrumentation/nodejs/package.json | cut -d'"' -f4)"
+INSTRUMENTATION_PHP_VERSION ?= "$(shell cat autoinstrumentation/php/version.txt)"
 INSTRUMENTATION_PYTHON_VERSION ?= "$(shell grep -o '^opentelemetry-instrumentation==[^ ]*' autoinstrumentation/python/requirements.txt | cut -d'=' -f3)"
 INSTRUMENTATION_DOTNET_VERSION ?= "$(shell cat autoinstrumentation/dotnet/version.txt)"
-INSTRUMENTATION_PHP_VERSION ?= "$(shell cat autoinstrumentation/php/version.txt)"
 INSTRUMENTATION_APACHE_HTTPD_VERSION ?= "$(shell cat autoinstrumentation/apache-httpd/version.txt)"
 
 COMMON_LDFLAGS ?= -s -w
@@ -72,14 +72,14 @@ INSTRUMENTATION_JAVA_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_JAVA_IMG_REPO}:${INS
 INSTRUMENTATION_NODEJS_IMG_REPO ?= autoinstrumentation-nodejs
 INSTRUMENTATION_NODEJS_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_NODEJS_IMG_REPO}:${INSTRUMENTATION_NODEJS_VERSION}
 
+INSTRUMENTATION_PHP_IMG_REPO ?= autoinstrumentation-php
+INSTRUMENTATION_PHP_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_PHP_IMG_REPO}:${INSTRUMENTATION_PHP_VERSION}
+
 INSTRUMENTATION_PYTHON_IMG_REPO ?= autoinstrumentation-python
 INSTRUMENTATION_PYTHON_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_PYTHON_IMG_REPO}:${INSTRUMENTATION_PYTHON_VERSION}
 
 INSTRUMENTATION_DOTNET_IMG_REPO ?= autoinstrumentation-dotnet
 INSTRUMENTATION_DOTNET_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_DOTNET_IMG_REPO}:${INSTRUMENTATION_DOTNET_VERSION}
-
-INSTRUMENTATION_PHP_IMG_REPO ?= autoinstrumentation-php
-INSTRUMENTATION_PHP_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_PHP_IMG_REPO}:${INSTRUMENTATION_PHP_VERSION}
 
 INSTRUMENTATION_APACHE_HTTPD_IMG_REPO ?= autoinstrumentation-apache-httpd
 INSTRUMENTATION_APACHE_HTTPD_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_APACHE_HTTPD_IMG_REPO}:${INSTRUMENTATION_APACHE_HTTPD_VERSION}
@@ -286,9 +286,9 @@ add-image-collector:
 add-instrumentation-images:
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-java-image=$(INSTRUMENTATION_JAVA_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-nodejs-image=$(INSTRUMENTATION_NODEJS_IMG)
+	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-php-image=$(INSTRUMENTATION_PHP_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-python-image=$(INSTRUMENTATION_PYTHON_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-dotnet-image=$(INSTRUMENTATION_DOTNET_IMG)
-    @$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-php-image=$(INSTRUMENTATION_PHP_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-apache-httpd-image=$(INSTRUMENTATION_APACHE_HTTPD_IMG)
 
 # Enable Go auto-instrumentation support in the operator
@@ -598,6 +598,12 @@ container-instrumentation-nodejs:
 	docker build --load -t ${INSTRUMENTATION_NODEJS_IMG} autoinstrumentation/nodejs \
 		--build-arg version=${INSTRUMENTATION_NODEJS_VERSION}
 
+# Build PHP auto-instrumentation container image
+.PHONY: container-instrumentation-php
+container-instrumentation-php:
+	docker build --load -t ${INSTRUMENTATION_PHP_IMG} autoinstrumentation/php \
+		--build-arg version=${INSTRUMENTATION_PHP_VERSION}
+
 # Build Python auto-instrumentation container image
 .PHONY: container-instrumentation-python
 container-instrumentation-python:
@@ -610,12 +616,6 @@ container-instrumentation-dotnet:
 	docker build --load -t ${INSTRUMENTATION_DOTNET_IMG} autoinstrumentation/dotnet \
 		--build-arg version=${INSTRUMENTATION_DOTNET_VERSION}
 
-# Build PHP auto-instrumentation container image
-.PHONY: container-instrumentation-php
-container-instrumentation-php:
-	docker build --load -t ${INSTRUMENTATION_PHP_IMG} autoinstrumentation/php \
-		--build-arg version=${INSTRUMENTATION_PHP_VERSION}
-
 # Build Apache HTTPD auto-instrumentation container image
 .PHONY: container-instrumentation-apache-httpd
 container-instrumentation-apache-httpd:
@@ -624,7 +624,7 @@ container-instrumentation-apache-httpd:
 
 # Build all auto-instrumentation container images
 .PHONY: container-instrumentation-all
-container-instrumentation-all: container-instrumentation-java container-instrumentation-nodejs container-instrumentation-python container-instrumentation-dotnet container-instrumentation-php container-instrumentation-apache-httpd
+container-instrumentation-all: container-instrumentation-java container-instrumentation-nodejs container-instrumentation-php container-instrumentation-python container-instrumentation-dotnet container-instrumentation-apache-httpd
 
 ##@ Kind Cluster
 # Start kind cluster for local development
@@ -698,9 +698,9 @@ load-image-operator-opamp-bridge: container-operator-opamp-bridge kind
 load-images-instrumentation: container-instrumentation-all kind
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_JAVA_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_NODEJS_IMG}
+	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_PHP_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_PYTHON_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_DOTNET_IMG}
-    $(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_PHP_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_APACHE_HTTPD_IMG}
 
 # Install cert-manager in the cluster
@@ -1059,9 +1059,9 @@ endif
 	@echo "$(BRIDGETESTSERVER_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_JAVA_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_NODEJS_IMG)" >>$(IMAGE_LIST_FILE)
+	@echo "$(INSTRUMENTATION_PHP_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_PYTHON_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_DOTNET_IMG)" >>$(IMAGE_LIST_FILE)
-	@echo "$(INSTRUMENTATION_PHP_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_APACHE_HTTPD_IMG)" >>$(IMAGE_LIST_FILE)
 	xargs -x -n 50 docker save -o "$(IMAGE_ARCHIVE)" <$(IMAGE_LIST_FILE)
 
