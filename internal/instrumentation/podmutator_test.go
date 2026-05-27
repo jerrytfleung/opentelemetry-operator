@@ -1228,6 +1228,541 @@ func TestMutatePod(t *testing.T) {
 			},
 		},
 		{
+			name: "php injection, true",
+			ns: corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "php",
+				},
+			},
+			inst: v1alpha1.Instrumentation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-inst",
+					Namespace: "php",
+				},
+				Spec: v1alpha1.InstrumentationSpec{
+					Php: v1alpha1.Php{
+						Image: "otel/php:1",
+						Env: []corev1.EnvVar{
+							{
+								Name:  "OTEL_LOG_LEVEL",
+								Value: "debug",
+							},
+							{
+								Name:  "OTEL_TRACES_EXPORTER",
+								Value: "otlp",
+							},
+							{
+								Name:  "OTEL_METRICS_EXPORTER",
+								Value: "otlp",
+							},
+							{
+								Name:  "OTEL_LOGS_EXPORTER",
+								Value: "otlp",
+							},
+							{
+								Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+								Value: "http://localhost:4318",
+							},
+						},
+					},
+					Exporter: v1alpha1.Exporter{
+						Endpoint: "http://collector:12345",
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "OTEL_TRACES_SAMPLER",
+							Value: "parentbased_traceidratio",
+						},
+						{
+							Name:  "OTEL_TRACES_SAMPLER_ARG",
+							Value: "0.85",
+						},
+					},
+				},
+			},
+			pod: corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationInjectPhp: "true",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "app",
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationInjectPhp: "true",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    phpInitContainerName,
+							Image:   "otel/php:1",
+							Command: []string{"cp", "-r", "/autoinstrumentation/.", phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      phpVolumeName,
+								MountPath: phpInstrMountPath,
+							}},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name: "app",
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_LOG_LEVEL",
+									Value: "debug",
+								},
+								{
+									Name:  "OTEL_TRACES_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_METRICS_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_LOGS_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+									Value: "http://localhost:4318",
+								},
+								{
+									Name:  "OTEL_TRACES_SAMPLER",
+									Value: "parentbased_traceidratio",
+								},
+								{
+									Name:  "OTEL_TRACES_SAMPLER_ARG",
+									Value: "0.85",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+								{
+									Name:  "OTEL_SERVICE_NAME",
+									Value: "app",
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_POD_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "spec.nodeName",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_RESOURCE_ATTRIBUTES",
+									Value: "k8s.container.name=app,k8s.namespace.name=php,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=php.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).app,service.namespace=php",
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+				},
+			},
+			config: config.Config{
+				EnableInstrumentationCRDs:    true,
+				EnablePhpAutoInstrumentation: truee,
+			},
+		},
+		{
+			name: "php injection multiple containers, true",
+			ns: corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "php-multiple-containers",
+				},
+			},
+			inst: v1alpha1.Instrumentation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-inst",
+					Namespace: "php-multiple-containers",
+				},
+				Spec: v1alpha1.InstrumentationSpec{
+					Php: v1alpha1.Php{
+						Image: "otel/php:1",
+						Env: []corev1.EnvVar{
+							{
+								Name:  "OTEL_LOG_LEVEL",
+								Value: "debug",
+							},
+							{
+								Name:  "OTEL_TRACES_EXPORTER",
+								Value: "otlp",
+							},
+							{
+								Name:  "OTEL_METRICS_EXPORTER",
+								Value: "otlp",
+							},
+							{
+								Name:  "OTEL_LOGS_EXPORTER",
+								Value: "otlp",
+							},
+							{
+								Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+								Value: "http://localhost:4318",
+							},
+						},
+					},
+					Exporter: v1alpha1.Exporter{
+						Endpoint: "http://collector:12345",
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "OTEL_TRACES_SAMPLER",
+							Value: "parentbased_traceidratio",
+						},
+						{
+							Name:  "OTEL_TRACES_SAMPLER_ARG",
+							Value: "0.85",
+						},
+					},
+				},
+			},
+			pod: corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationInjectPhp:           "true",
+						annotationInjectContainerName: "app1,app2",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "app1",
+						},
+						{
+							Name: "app2",
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationInjectPhp:           "true",
+						annotationInjectContainerName: "app1,app2",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    phpInitContainerName,
+							Image:   "otel/php:1",
+							Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      phpVolumeName,
+								MountPath: phpInstrMountPath,
+							}},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name: "app1",
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_LOG_LEVEL",
+									Value: "debug",
+								},
+								{
+									Name:  "OTEL_TRACES_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_METRICS_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_LOGS_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+									Value: "http://localhost:4318",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+								{
+									Name:  "OTEL_TRACES_SAMPLER",
+									Value: "parentbased_traceidratio",
+								},
+								{
+									Name:  "OTEL_TRACES_SAMPLER_ARG",
+									Value: "0.85",
+								},
+								{
+									Name:  "OTEL_SERVICE_NAME",
+									Value: "app1",
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_POD_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "spec.nodeName",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_RESOURCE_ATTRIBUTES",
+									Value: "k8s.container.name=app1,k8s.namespace.name=php-multiple-containers,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=php-multiple-containers.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).app1,service.namespace=php-multiple-containers",
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+						{
+							Name: "app2",
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_LOG_LEVEL",
+									Value: "debug",
+								},
+								{
+									Name:  "OTEL_TRACES_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_METRICS_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_LOGS_EXPORTER",
+									Value: "otlp",
+								},
+								{
+									Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+									Value: "http://localhost:4318",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+								{
+									Name:  "OTEL_TRACES_SAMPLER",
+									Value: "parentbased_traceidratio",
+								},
+								{
+									Name:  "OTEL_TRACES_SAMPLER_ARG",
+									Value: "0.85",
+								},
+								{
+									Name:  "OTEL_SERVICE_NAME",
+									Value: "app2",
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_POD_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "spec.nodeName",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_RESOURCE_ATTRIBUTES",
+									Value: "k8s.container.name=app2,k8s.namespace.name=php-multiple-containers,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=php-multiple-containers.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).app2,service.namespace=php-multiple-containers",
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+				},
+			},
+			config: config.Config{
+				EnableInstrumentationCRDs:       true,
+				EnablePythonAutoInstrumentation: truee,
+			},
+		},
+		{
+			name: "php injection feature gate disabled",
+			ns: corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "php-disabled",
+				},
+			},
+			inst: v1alpha1.Instrumentation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-inst",
+					Namespace: "php-disabled",
+				},
+				Spec: v1alpha1.InstrumentationSpec{
+					Python: v1alpha1.Python{
+						Image: "otel/php:1",
+						Env:   []corev1.EnvVar{},
+					},
+					Exporter: v1alpha1.Exporter{
+						Endpoint: "http://collector:12345",
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "OTEL_TRACES_SAMPLER",
+							Value: "parentbased_traceidratio",
+						},
+						{
+							Name:  "OTEL_TRACES_SAMPLER_ARG",
+							Value: "0.85",
+						},
+					},
+				},
+			},
+			pod: corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationInjectPhp: "true",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "app",
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationInjectPhp: "true",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "app",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "python injection, true",
 			ns: corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
@@ -5142,6 +5677,64 @@ func TestInstrumentationLanguageContainersSet(t *testing.T) {
 			err := test.instrumentations.setCommonInstrumentedContainers(test.ns, test.pod)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedInstrumentations, test.instrumentations)
+		})
+	}
+}
+
+func TestPhpContainerAnnotationsDuplicateDetection(t *testing.T) {
+	tests := []struct {
+		name               string
+		annotations        map[string]string
+		expectedContainers []string
+		expectedErr        string
+	}{
+		{
+			name: "php with common container-names only",
+			annotations: map[string]string{
+				annotationInjectPhp:           "true",
+				annotationInjectContainerName: "initContainer",
+			},
+			expectedContainers: []string{"initContainer"},
+		},
+		{
+			name: "php with both common container names",
+			annotations: map[string]string{
+				annotationInjectPhp:               "true",
+				annotationInjectContainerName:     "initContainer",
+				annotationInjectPhpContainersName: "initContainer",
+			},
+			expectedContainers: []string{"initContainer", "initContainer"},
+			expectedErr:        "duplicated container names detected: [initContainer]",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			insts := languageInstrumentations{
+				Php: instrumentationWithContainers{Instrumentation: &v1alpha1.Instrumentation{}},
+			}
+
+			ns := corev1.Namespace{}
+			pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: test.annotations}}
+
+			err := insts.setCommonInstrumentedContainers(ns, pod)
+			require.NoError(t, err)
+
+			err = insts.setLanguageSpecificContainers(ns.ObjectMeta, pod.ObjectMeta)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expectedContainers, insts.Php.Containers)
+
+			ok, validateErr := insts.areInstrumentedContainersCorrect()
+			if test.expectedErr == "" {
+				assert.True(t, ok)
+				assert.NoError(t, validateErr)
+				return
+			}
+
+			assert.False(t, ok)
+			require.Error(t, validateErr)
+			assert.Equal(t, test.expectedErr, validateErr.Error())
 		})
 	}
 }
