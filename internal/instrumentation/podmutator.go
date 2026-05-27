@@ -44,9 +44,9 @@ type instrumentationWithContainers struct {
 type languageInstrumentations struct {
 	Java        instrumentationWithContainers
 	NodeJS      instrumentationWithContainers
+	Php         instrumentationWithContainers
 	Python      instrumentationWithContainers
 	DotNet      instrumentationWithContainers
-	Php         instrumentationWithContainers
 	ApacheHttpd instrumentationWithContainers
 	Nginx       instrumentationWithContainers
 	Go          instrumentationWithContainers
@@ -57,9 +57,9 @@ func instrumentationsList(langInsts *languageInstrumentations) []*instrumentatio
 	return []*instrumentationWithContainers{
 		&langInsts.Java,
 		&langInsts.NodeJS,
+		&langInsts.Php,
 		&langInsts.Python,
 		&langInsts.DotNet,
-		&langInsts.Php,
 		&langInsts.ApacheHttpd,
 		&langInsts.Nginx,
 		&langInsts.Go,
@@ -161,6 +161,10 @@ func (langInsts *languageInstrumentations) setLanguageSpecificContainers(ns, pod
 			annotation: annotationInjectNodeJSContainersName,
 		},
 		{
+			iwc:        &langInsts.Php,
+			annotation: annotationInjectPhpContainersName,
+		},
+		{
 			iwc:        &langInsts.Python,
 			annotation: annotationInjectPythonContainersName,
 		},
@@ -171,10 +175,6 @@ func (langInsts *languageInstrumentations) setLanguageSpecificContainers(ns, pod
 		{
 			iwc:        &langInsts.Go,
 			annotation: annotationInjectGoContainersName,
-		},
-		{
-			iwc:        &langInsts.Php,
-			annotation: annotationInjectPhpContainersName,
 		},
 		{
 			iwc:        &langInsts.ApacheHttpd,
@@ -258,11 +258,25 @@ func (pm *instPodMutator) Mutate(ctx context.Context, ns corev1.Namespace, pod c
 		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for NodeJS auto instrumentation is not enabled")
 	}
 
+	if inst, err = pm.getInstrumentationInstance(ctx, ns, pod, annotationInjectPhp); err != nil {
+		// we still allow the pod to be created, but we log a message to the operator's logs
+		logger.Error(err, "failed to select an OpenTelemetry Instrumentation instance for this pod")
+		return pod, err
+	}
+	if pm.config.EnablePhpAutoInstrumentation || inst == nil {
+		insts.Php.Instrumentation = inst
+		insts.Php.AdditionalAnnotations = map[string]string{annotationPhpPlatform: annotationValue(ns.ObjectMeta, pod.ObjectMeta, annotationPhpPlatform)}
+	} else {
+		logger.Error(nil, "support for PHP auto instrumentation is not enabled")
+		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for PHP auto instrumentation is not enabled")
+	}
+
 	if inst, err = pm.getInstrumentationInstance(ctx, ns, pod, annotationInjectPython); err != nil {
 		// we still allow the pod to be created, but we log a message to the operator's logs
 		logger.Error(err, "failed to select an OpenTelemetry Instrumentation instance for this pod")
 		return pod, err
 	}
+
 	if pm.config.EnablePythonAutoInstrumentation || inst == nil {
 		insts.Python.Instrumentation = inst
 		insts.Python.AdditionalAnnotations = map[string]string{annotationPythonPlatform: annotationValue(ns.ObjectMeta, pod.ObjectMeta, annotationPythonPlatform)}
@@ -282,19 +296,6 @@ func (pm *instPodMutator) Mutate(ctx context.Context, ns corev1.Namespace, pod c
 	} else {
 		logger.Error(nil, "support for .NET auto instrumentation is not enabled")
 		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for .NET auto instrumentation is not enabled")
-	}
-
-	if inst, err = pm.getInstrumentationInstance(ctx, ns, pod, annotationInjectPhp); err != nil {
-		// we still allow the pod to be created, but we log a message to the operator's logs
-		logger.Error(err, "failed to select an OpenTelemetry Instrumentation instance for this pod")
-		return pod, err
-	}
-	if pm.config.EnablePhpAutoInstrumentation || inst == nil {
-		insts.Php.Instrumentation = inst
-		insts.Php.AdditionalAnnotations = map[string]string{annotationPhpPlatform: annotationValue(ns.ObjectMeta, pod.ObjectMeta, annotationPhpPlatform)}
-	} else {
-		logger.Error(nil, "support for PHP auto instrumentation is not enabled")
-		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for PHP auto instrumentation is not enabled")
 	}
 
 	if inst, err = pm.getInstrumentationInstance(ctx, ns, pod, annotationInjectGo); err != nil {
