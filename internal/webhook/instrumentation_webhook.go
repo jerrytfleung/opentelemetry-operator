@@ -258,13 +258,13 @@ func (w InstrumentationWebhook) validate(r *v1alpha1.Instrumentation) (admission
 	if err != nil {
 		return warnings, fmt.Errorf("spec.nodejs.volumeClaimTemplate and spec.nodejs.volumeSizeLimit cannot both be defined: %w", err)
 	}
-	err = validateInstrVolume(r.Spec.Python.VolumeClaimTemplate, r.Spec.Python.VolumeSizeLimit)
-	if err != nil {
-		return warnings, fmt.Errorf("spec.python.volumeClaimTemplate and spec.python.volumeSizeLimit cannot both be defined: %w", err)
-	}
 	err = validateInstrVolume(r.Spec.Php.VolumeClaimTemplate, r.Spec.Php.VolumeSizeLimit)
 	if err != nil {
 		return warnings, fmt.Errorf("spec.php.volumeClaimTemplate and spec.php.volumeSizeLimit cannot both be defined: %w", err)
+	}
+	err = validateInstrVolume(r.Spec.Python.VolumeClaimTemplate, r.Spec.Python.VolumeSizeLimit)
+	if err != nil {
+		return warnings, fmt.Errorf("spec.python.volumeClaimTemplate and spec.python.volumeSizeLimit cannot both be defined: %w", err)
 	}
 
 	warnings = append(warnings, validateExporter(r.Spec.Exporter)...)

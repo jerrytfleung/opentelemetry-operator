@@ -46,6 +46,10 @@ type InstrumentationSpec struct {
 	// +optional
 	NodeJS NodeJS `json:"nodejs,omitempty"`
 
+	// PHP defines configuration for PHP auto-instrumentation.
+	// +optional
+	Php Php `json:"php,omitempty"`
+
 	// Python defines configuration for python auto-instrumentation.
 	// +optional
 	Python Python `json:"python,omitempty"`
@@ -60,10 +64,6 @@ type InstrumentationSpec struct {
 	// Failure to set this value causes instrumentation injection to abort, leaving the original pod unchanged.
 	// +optional
 	Go Go `json:"go,omitempty"`
-
-	// PHP defines configuration for PHP auto-instrumentation.
-	// +optional
-	Php Php `json:"php,omitempty"`
 
 	// ApacheHttpd defines configuration for Apache HTTPD auto-instrumentation.
 	// +optional
@@ -80,7 +80,7 @@ type InstrumentationSpec struct {
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 
 	// InitContainerSecurityContext applied to the auto-instrumentation init
-	// containers created for Java, NodeJS, Python, DotNet, Apache HTTPD and
+	// containers created for Java, NodeJS, PHP, Python, DotNet, Apache HTTPD and
 	// Nginx. When unset, init containers inherit the security context of the
 	// first application container being instrumented (existing behavior). The
 	// Go auto-instrumentation sidecar is intentionally excluded — its security
@@ -232,6 +232,32 @@ type NodeJS struct {
 	Resources corev1.ResourceRequirements `json:"resourceRequirements,omitempty"`
 }
 
+// Php defines PHP SDK and instrumentation configuration.
+type Php struct {
+	// Image is a container image with PHP SDK and auto-instrumentation.
+	// +optional
+	Image string `json:"image,omitempty"`
+
+	// VolumeClaimTemplate defines an ephemeral volume used for auto-instrumentation.
+	// If omitted, an emptyDir is used with size limit VolumeSizeLimit
+	VolumeClaimTemplate corev1.PersistentVolumeClaimTemplate `json:"volumeClaimTemplate,omitempty"`
+
+	// VolumeSizeLimit defines size limit for volume used for auto-instrumentation.
+	// The default size is 200Mi.
+	//
+	// Deprecated: use spec.<lang>.volume.size instead. This field will be inactive in a future release.
+	VolumeSizeLimit *resource.Quantity `json:"volumeLimitSize,omitempty"`
+
+	// Env defines PHP specific env vars. There are four layers for env vars' definitions and
+	// the precedence order is: `original container env vars` > `language specific env vars` > `common env vars` > `instrument spec configs' vars`.
+	// If the former var had been defined, then the other vars would be ignored.
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+	// Resources describes the compute resource requirements.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resourceRequirements,omitempty"`
+}
+
 // Python defines Python SDK and instrumentation configuration.
 type Python struct {
 	// Image is a container image with Python SDK and auto-instrumentation.
@@ -316,32 +342,6 @@ type Go struct {
 	// access to /sys/kernel/debug to attach uprobes.
 	// +optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
-}
-
-// Php defines PHP SDK and instrumentation configuration.
-type Php struct {
-	// Image is a container image with PHP SDK and auto-instrumentation.
-	// +optional
-	Image string `json:"image,omitempty"`
-
-	// VolumeClaimTemplate defines an ephemeral volume used for auto-instrumentation.
-	// If omitted, an emptyDir is used with size limit VolumeSizeLimit
-	VolumeClaimTemplate corev1.PersistentVolumeClaimTemplate `json:"volumeClaimTemplate,omitempty"`
-
-	// VolumeSizeLimit defines size limit for volume used for auto-instrumentation.
-	// The default size is 200Mi.
-	//
-	// Deprecated: use spec.<lang>.volume.size instead. This field will be inactive in a future release.
-	VolumeSizeLimit *resource.Quantity `json:"volumeLimitSize,omitempty"`
-
-	// Env defines PHP specific env vars. There are four layers for env vars' definitions and
-	// the precedence order is: `original container env vars` > `language specific env vars` > `common env vars` > `instrument spec configs' vars`.
-	// If the former var had been defined, then the other vars would be ignored.
-	// +optional
-	Env []corev1.EnvVar `json:"env,omitempty"`
-	// Resources describes the compute resource requirements.
-	// +optional
-	Resources corev1.ResourceRequirements `json:"resourceRequirements,omitempty"`
 }
 
 // ApacheHttpd defines Apache SDK and instrumentation configuration.

@@ -148,11 +148,6 @@ func (u *InstrumentationUpgrade) upgrade(_ context.Context, inst v1alpha1.Instru
 						upgraded.Spec.DotNet.Image = u.DefaultAutoInstDotNet
 						upgraded.Annotations[annotation] = u.DefaultAutoInstDotNet
 					}
-				case constants.AnnotationDefaultAutoInstrumentationPhp:
-					if inst.Spec.Php.Image == autoInst {
-						upgraded.Spec.Php.Image = u.DefaultAutoInstPhp
-						upgraded.Annotations[annotation] = u.DefaultAutoInstPhp
-					}
 				case constants.AnnotationDefaultAutoInstrumentationGo:
 					if inst.Spec.Go.Image == autoInst {
 						upgraded.Spec.Go.Image = u.DefaultAutoInstGo
@@ -162,6 +157,11 @@ func (u *InstrumentationUpgrade) upgrade(_ context.Context, inst v1alpha1.Instru
 					if inst.Spec.Nginx.Image == autoInst {
 						upgraded.Spec.Nginx.Image = u.DefaultAutoInstNginx
 						upgraded.Annotations[annotation] = u.DefaultAutoInstNginx
+					}
+				case constants.AnnotationDefaultAutoInstrumentationPhp:
+					if inst.Spec.Php.Image == autoInst {
+						upgraded.Spec.Php.Image = u.DefaultAutoInstPhp
+						upgraded.Annotations[annotation] = u.DefaultAutoInstPhp
 					}
 				case constants.AnnotationDefaultAutoInstrumentationPython:
 					if inst.Spec.Python.Image == autoInst {
