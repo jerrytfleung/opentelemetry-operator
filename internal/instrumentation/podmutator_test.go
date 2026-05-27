@@ -1559,20 +1559,20 @@ func TestMutatePod(t *testing.T) {
 									Value: "http://localhost:4318",
 								},
 								{
-									Name:  phpIniScanDirEnvVarName,
-									Value: phpIniScanDirEnvVarValue,
-								},
-								{
-									Name:  otelPhpAutoloadEnabledrEnvVarName,
-									Value: otelPhpAutoloadEnabledrEnvVarValue,
-								},
-								{
 									Name:  "OTEL_TRACES_SAMPLER",
 									Value: "parentbased_traceidratio",
 								},
 								{
 									Name:  "OTEL_TRACES_SAMPLER_ARG",
 									Value: "0.85",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 								{
 									Name:  "OTEL_SERVICE_NAME",
@@ -1646,20 +1646,20 @@ func TestMutatePod(t *testing.T) {
 									Value: "http://localhost:4318",
 								},
 								{
-									Name:  phpIniScanDirEnvVarName,
-									Value: phpIniScanDirEnvVarValue,
-								},
-								{
-									Name:  otelPhpAutoloadEnabledrEnvVarName,
-									Value: otelPhpAutoloadEnabledrEnvVarValue,
-								},
-								{
 									Name:  "OTEL_TRACES_SAMPLER",
 									Value: "parentbased_traceidratio",
 								},
 								{
 									Name:  "OTEL_TRACES_SAMPLER_ARG",
 									Value: "0.85",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 								{
 									Name:  "OTEL_SERVICE_NAME",
@@ -1697,8 +1697,8 @@ func TestMutatePod(t *testing.T) {
 				},
 			},
 			config: config.Config{
-				EnableInstrumentationCRDs:       true,
-				EnablePythonAutoInstrumentation: truee,
+				EnableInstrumentationCRDs:    true,
+				EnablePhpAutoInstrumentation: truee,
 			},
 		},
 		{
