@@ -1714,7 +1714,7 @@ func TestMutatePod(t *testing.T) {
 					Namespace: "php-disabled",
 				},
 				Spec: v1alpha1.InstrumentationSpec{
-					PHP: v1alpha1.Php{
+					Php: v1alpha1.Php{
 						Image: "otel/php:1",
 						Env:   []corev1.EnvVar{},
 					},
@@ -4110,6 +4110,15 @@ func TestMutatePod(t *testing.T) {
 							},
 						},
 					},
+					Php: v1alpha1.Php{
+						Image: "otel/php:1",
+						Env: []corev1.EnvVar{
+							{
+								Name:  "OTEL_LOG_LEVEL",
+								Value: "debug",
+							},
+						},
+					},
 					Python: v1alpha1.Python{
 						Image: "otel/python:1",
 						Env: []corev1.EnvVar{
@@ -4130,10 +4139,12 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectDotNet:               "true",
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
+						annotationInjectPhp:                  "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
 						annotationInjectNodeJSContainersName: "nodejs1,nodejs2",
+						annotationInjectPhpContainersName:    "php1,php2",
 						annotationInjectPythonContainersName: "python1,python2",
 					},
 				},
@@ -4158,6 +4169,12 @@ func TestMutatePod(t *testing.T) {
 							Name: "nodejs2",
 						},
 						{
+							Name: "php1",
+						},
+						{
+							Name: "php2",
+						},
+						{
 							Name: "python1",
 						},
 						{
@@ -4172,10 +4189,12 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectDotNet:               "true",
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
+						annotationInjectPhp:                  "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
 						annotationInjectNodeJSContainersName: "nodejs1,nodejs2",
+						annotationInjectPhpContainersName:    "php1,php2",
 						annotationInjectPythonContainersName: "python1,python2",
 					},
 				},
@@ -4191,6 +4210,14 @@ func TestMutatePod(t *testing.T) {
 						},
 						{
 							Name: nodejsVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+						{
+							Name: phpVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									SizeLimit: &defaultVolumeLimitSize,
@@ -4231,6 +4258,15 @@ func TestMutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      nodejsVolumeName,
 								MountPath: nodejsInstrMountPath,
+							}},
+						},
+						{
+							Name:    phpInitContainerName,
+							Image:   "otel/php:1",
+							Command: []string{"cp", "-r", "/autoinstrumentation/.", phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      phpVolumeName,
+								MountPath: phpInstrMountPath,
 							}},
 						},
 						{
@@ -4680,6 +4716,140 @@ func TestMutatePod(t *testing.T) {
 							},
 						},
 						{
+							Name: "php1",
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_LOG_LEVEL",
+									Value: "debug",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+								{
+									Name:  "OTEL_SERVICE_NAME",
+									Value: "php1",
+								},
+								{
+									Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+									Value: "http://collector:12345",
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_POD_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "spec.nodeName",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_RESOURCE_ATTRIBUTES",
+									Value: "k8s.container.name=php1,k8s.namespace.name=multi-instrumentation-multi-containers,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=multi-instrumentation-multi-containers.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).php1,service.namespace=multi-instrumentation-multi-containers",
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+						{
+							Name: "php2",
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_LOG_LEVEL",
+									Value: "debug",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+								{
+									Name:  "OTEL_SERVICE_NAME",
+									Value: "php2",
+								},
+								{
+									Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+									Value: "http://collector:12345",
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_POD_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name: "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "spec.nodeName",
+										},
+									},
+								},
+								{
+									Name:  "OTEL_RESOURCE_ATTRIBUTES",
+									Value: "k8s.container.name=php2,k8s.namespace.name=multi-instrumentation-multi-containers,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=multi-instrumentation-multi-containers.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).php2,service.namespace=multi-instrumentation-multi-containers",
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+						{
 							Name: "python1",
 							Env: []corev1.EnvVar{
 								{
@@ -4845,6 +5015,7 @@ func TestMutatePod(t *testing.T) {
 				EnableMultiInstrumentation:      truee,
 				EnableJavaAutoInstrumentation:   truee,
 				EnableNodeJSAutoInstrumentation: truee,
+				EnablePhpAutoInstrumentation:    truee,
 				EnablePythonAutoInstrumentation: truee,
 				EnableDotNetAutoInstrumentation: truee,
 			},
@@ -4889,6 +5060,15 @@ func TestMutatePod(t *testing.T) {
 							},
 						},
 					},
+					Php: v1alpha1.Php{
+						Image: "otel/php:1",
+						Env: []corev1.EnvVar{
+							{
+								Name:  "OTEL_LOG_LEVEL",
+								Value: "debug",
+							},
+						},
+					},
 					Python: v1alpha1.Python{
 						Image: "otel/python:1",
 						Env: []corev1.EnvVar{
@@ -4909,10 +5089,12 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectDotNet:               "true",
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
+						annotationInjectPhp:                  "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
 						annotationInjectNodeJSContainersName: "nodejs1,nodejs2",
+						annotationInjectPhpContainersName:    "php1,php2",
 						annotationInjectPythonContainersName: "python1,python2",
 						annotationInjectContainerName:        "should-not-be-instrumented1,should-not-be-instrumented2",
 					},
@@ -4936,6 +5118,12 @@ func TestMutatePod(t *testing.T) {
 						},
 						{
 							Name: "nodejs2",
+						},
+						{
+							Name: "php1",
+						},
+						{
+							Name: "php2",
 						},
 						{
 							Name: "python1",
@@ -4958,10 +5146,12 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectDotNet:               "true",
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
+						annotationInjectPhp:                  "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
 						annotationInjectNodeJSContainersName: "nodejs1,nodejs2",
+						annotationInjectPhpContainersName:    "php1,php2",
 						annotationInjectPythonContainersName: "python1,python2",
 						annotationInjectContainerName:        "should-not-be-instrumented1,should-not-be-instrumented2",
 					},
@@ -4987,6 +5177,12 @@ func TestMutatePod(t *testing.T) {
 							Name: "nodejs2",
 						},
 						{
+							Name: "php1",
+						},
+						{
+							Name: "php2",
+						},
+						{
 							Name: "python1",
 						},
 						{
@@ -5006,6 +5202,7 @@ func TestMutatePod(t *testing.T) {
 				EnableMultiInstrumentation:      false,
 				EnableJavaAutoInstrumentation:   false,
 				EnableNodeJSAutoInstrumentation: false,
+				EnablePhpAutoInstrumentation:    false,
 				EnablePythonAutoInstrumentation: false,
 				EnableDotNetAutoInstrumentation: false,
 			},
@@ -5050,6 +5247,15 @@ func TestMutatePod(t *testing.T) {
 							},
 						},
 					},
+					Php: v1alpha1.Php{
+						Image: "otel/php:1",
+						Env: []corev1.EnvVar{
+							{
+								Name:  "OTEL_LOG_LEVEL",
+								Value: "debug",
+							},
+						},
+					},
 					Python: v1alpha1.Python{
 						Image: "otel/python:1",
 						Env: []corev1.EnvVar{
@@ -5070,6 +5276,7 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectDotNet: "true",
 						annotationInjectJava:   "true",
 						annotationInjectNodeJS: "true",
+						annotationInjectPhp:    "true",
 						annotationInjectPython: "true",
 					},
 				},
@@ -5092,6 +5299,12 @@ func TestMutatePod(t *testing.T) {
 						},
 						{
 							Name: "nodejs2",
+						},
+						{
+							Name: "php1",
+						},
+						{
+							Name: "php2",
 						},
 						{
 							Name: "python1",
@@ -5114,6 +5327,7 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectDotNet: "true",
 						annotationInjectJava:   "true",
 						annotationInjectNodeJS: "true",
+						annotationInjectPhp:    "true",
 						annotationInjectPython: "true",
 					},
 				},
@@ -5136,6 +5350,12 @@ func TestMutatePod(t *testing.T) {
 						},
 						{
 							Name: "nodejs2",
+						},
+						{
+							Name: "php1",
+						},
+						{
+							Name: "php2",
 						},
 						{
 							Name: "python1",
@@ -5191,6 +5411,15 @@ func TestMutatePod(t *testing.T) {
 					},
 					NodeJS: v1alpha1.NodeJS{
 						Image: "otel/nodejs:1",
+						Env: []corev1.EnvVar{
+							{
+								Name:  "OTEL_LOG_LEVEL",
+								Value: "debug",
+							},
+						},
+					},
+					Php: v1alpha1.Php{
+						Image: "otel/php:1",
 						Env: []corev1.EnvVar{
 							{
 								Name:  "OTEL_LOG_LEVEL",
