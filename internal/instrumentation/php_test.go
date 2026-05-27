@@ -4,8 +4,6 @@
 package instrumentation
 
 import (
-	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +24,7 @@ func TestInjectPhpSDK(t *testing.T) {
 		simulateDefaults bool
 	}{
 		{
-			name: "PYTHONPATH not defined",
+			name: "PHP_INI_SCAN_DIR not defined",
 			Php:  v1alpha1.Php{Image: "foo/bar:1"},
 			pod: corev1.Pod{
 				Spec: corev1.PodSpec{
@@ -52,10 +50,10 @@ func TestInjectPhpSDK(t *testing.T) {
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+							Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
+								MountPath: phpInstrMountPath,
 							}},
 						},
 					},
@@ -64,29 +62,17 @@ func TestInjectPhpSDK(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
 								},
 							},
 							Env: []corev1.EnvVar{
 								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
 								},
 								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -104,7 +90,7 @@ func TestInjectPhpSDK(t *testing.T) {
 				},
 			},
 			platform:         "glibc",
-			inst:             v1alpha1.Instrumentation{Spec: v1alpha1.InstrumentationSpec{Env: []corev1.EnvVar{{Name: "OTEL_METRICS_EXPORTER", Value: "none"}}}},
+			inst:             v1alpha1.Instrumentation{Spec: v1alpha1.InstrumentationSpec{Env: []corev1.EnvVar{{Name: phpIniScanDirEnvVarName, Value: "none"}, {Name: otelPhpAutoloadEnabledrEnvVarName, Value: "false"}}}},
 			simulateDefaults: true,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
@@ -117,11 +103,11 @@ func TestInjectPhpSDK(t *testing.T) {
 					InitContainers: []corev1.Container{{
 						Name:         "opentelemetry-auto-instrumentation-php",
 						Image:        "foo/bar:1",
-						Command:      []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: "/otel-auto-instrumentation-php"}},
+						Command:      []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
+						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: phpInstrMountPath}},
 					}},
 					Containers: []corev1.Container{{
-						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: "/otel-auto-instrumentation-php"}},
+						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: phpInstrMountPath}},
 						Env: []corev1.EnvVar{
 							{
 								Name: "OTEL_NODE_IP",
@@ -135,718 +121,715 @@ func TestInjectPhpSDK(t *testing.T) {
 									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
 								},
 							},
-							{Name: "PYTHONPATH", Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php")},
-							{Name: "OTEL_METRICS_EXPORTER", Value: "none"},
-							{Name: "OTEL_EXPORTER_OTLP_PROTOCOL", Value: "http/protobuf"},
-							{Name: "OTEL_TRACES_EXPORTER", Value: "otlp"},
-							{Name: "OTEL_LOGS_EXPORTER", Value: "otlp"},
+							{Name: phpIniScanDirEnvVarName, Value: "none"},
+							{Name: otelPhpAutoloadEnabledrEnvVarName, Value: "false"},
 						},
 					}},
 				},
 			},
 			err: nil,
 		},
-		{
-			name: "defaults applied when no spec.env",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{}},
-				},
-			},
-			platform:         "glibc",
-			inst:             v1alpha1.Instrumentation{},
-			simulateDefaults: true,
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{{
-						Name: phpVolumeName,
-						VolumeSource: corev1.VolumeSource{
-							EmptyDir: &corev1.EmptyDirVolumeSource{SizeLimit: &defaultVolumeLimitSize},
-						},
-					}},
-					InitContainers: []corev1.Container{{
-						Name:         "opentelemetry-auto-instrumentation-php",
-						Image:        "foo/bar:1",
-						Command:      []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: "/otel-auto-instrumentation-php"}},
-					}},
-					Containers: []corev1.Container{{
-						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: "/otel-auto-instrumentation-php"}},
-						Env: []corev1.EnvVar{
-							{
-								Name: "OTEL_NODE_IP",
-								ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.hostIP"},
-								},
-							},
-							{
-								Name: "OTEL_POD_IP",
-								ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
-								},
-							},
-							{Name: "PYTHONPATH", Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php")},
-							{Name: "OTEL_EXPORTER_OTLP_PROTOCOL", Value: "http/protobuf"},
-							{Name: "OTEL_TRACES_EXPORTER", Value: "otlp"},
-							{Name: "OTEL_METRICS_EXPORTER", Value: "otlp"},
-							{Name: "OTEL_LOGS_EXPORTER", Value: "otlp"},
-						},
-					}},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "PYTHONPATH defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1", Resources: testResourceRequirements},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PYTHONPATH",
-									Value: "/foo:/bar",
-								},
-							},
-						},
-					},
-				},
-			},
-			platform: "glibc",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: "opentelemetry-auto-instrumentation-php",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-							Resources: testResourceRequirements,
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/foo:/bar", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "OTEL_TRACES_EXPORTER defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "zipkin",
-								},
-							},
-						},
-					},
-				},
-			},
-			platform: "glibc",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: phpVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "zipkin",
-								},
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "OTEL_METRICS_EXPORTER defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "somebackend",
-								},
-							},
-						},
-					},
-				},
-			},
-			platform: "glibc",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: "opentelemetry-auto-instrumentation-php",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "somebackend",
-								},
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "OTEL_LOGS_EXPORTER defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "somebackend",
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: "opentelemetry-auto-instrumentation-php",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "somebackend",
-								},
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "OTEL_EXPORTER_OTLP_PROTOCOL defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "somebackend",
-								},
-							},
-						},
-					},
-				},
-			},
-			platform: "glibc",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: "opentelemetry-auto-instrumentation-php",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "somebackend",
-								},
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "PYTHONPATH defined as ValueFrom",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:      "PYTHONPATH",
-									ValueFrom: &corev1.EnvVarSource{},
-								},
-							},
-						},
-					},
-				},
-			},
-			platform: "glibc",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{
-								{
-									Name:      "PYTHONPATH",
-									ValueFrom: &corev1.EnvVarSource{},
-								},
-							},
-						},
-					},
-				},
-			},
-			err: fmt.Errorf("the container defines env var value via ValueFrom, envVar: %s", envPythonPath),
-		},
-		{
-			name: "musl platform defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
-					},
-				},
-			},
-			platform: "musl",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: phpVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation-musl/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "platform not defined",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
-					},
-				},
-			},
-			platform: "",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: phpVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
-		{
-			name: "platform not supported",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
-					},
-				},
-			},
-			platform: "not-supported",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
-					},
-				},
-			},
-			err: errors.New("provided instrumentation.opentelemetry.io/otel-php-platform annotation value 'not-supported' is not supported"),
-		},
-		{
-			name: "inject into init container",
-			Php:  v1alpha1.Php{Image: "foo/bar:1"},
-			pod: corev1.Pod{
-				Spec: corev1.PodSpec{
-					InitContainers: []corev1.Container{
-						{
-							Name: "my-init",
-						},
-					},
-				},
-			},
-			platform: "glibc",
-			expected: corev1.Pod{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: phpVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-php",
-							Image:   "foo/bar:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: "/otel-auto-instrumentation-php",
-							}},
-						},
-						{
-							Name: "my-init",
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-php",
-									MountPath: "/otel-auto-instrumentation-php",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PYTHONPATH",
-									Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
-								},
-								{
-									Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
-									Value: "http/protobuf",
-								},
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_METRICS_EXPORTER",
-									Value: "otlp",
-								},
-								{
-									Name:  "OTEL_LOGS_EXPORTER",
-									Value: "otlp",
-								},
-							},
-						},
-					},
-				},
-			},
-			err: nil,
-		},
+		//{
+		//	name: "defaults applied when no spec.env",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{{}},
+		//		},
+		//	},
+		//	platform:         "glibc",
+		//	inst:             v1alpha1.Instrumentation{},
+		//	simulateDefaults: true,
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{{
+		//				Name: phpVolumeName,
+		//				VolumeSource: corev1.VolumeSource{
+		//					EmptyDir: &corev1.EmptyDirVolumeSource{SizeLimit: &defaultVolumeLimitSize},
+		//				},
+		//			}},
+		//			InitContainers: []corev1.Container{{
+		//				Name:         "opentelemetry-auto-instrumentation-php",
+		//				Image:        "foo/bar:1",
+		//				Command:      []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//				VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: "/otel-auto-instrumentation-php"}},
+		//			}},
+		//			Containers: []corev1.Container{{
+		//				VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: "/otel-auto-instrumentation-php"}},
+		//				Env: []corev1.EnvVar{
+		//					{
+		//						Name: "OTEL_NODE_IP",
+		//						ValueFrom: &corev1.EnvVarSource{
+		//							FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.hostIP"},
+		//						},
+		//					},
+		//					{
+		//						Name: "OTEL_POD_IP",
+		//						ValueFrom: &corev1.EnvVarSource{
+		//							FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
+		//						},
+		//					},
+		//					{Name: "PYTHONPATH", Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php")},
+		//					{Name: "OTEL_EXPORTER_OTLP_PROTOCOL", Value: "http/protobuf"},
+		//					{Name: "OTEL_TRACES_EXPORTER", Value: "otlp"},
+		//					{Name: "OTEL_METRICS_EXPORTER", Value: "otlp"},
+		//					{Name: "OTEL_LOGS_EXPORTER", Value: "otlp"},
+		//				},
+		//			}},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "PYTHONPATH defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1", Resources: testResourceRequirements},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: "/foo:/bar",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	platform: "glibc",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: "opentelemetry-auto-instrumentation-php",
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//					Resources: testResourceRequirements,
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/foo:/bar", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "OTEL_TRACES_EXPORTER defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "zipkin",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	platform: "glibc",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: phpVolumeName,
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "zipkin",
+		//						},
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "OTEL_METRICS_EXPORTER defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "somebackend",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	platform: "glibc",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: "opentelemetry-auto-instrumentation-php",
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "somebackend",
+		//						},
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "OTEL_LOGS_EXPORTER defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "somebackend",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: "opentelemetry-auto-instrumentation-php",
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "somebackend",
+		//						},
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "OTEL_EXPORTER_OTLP_PROTOCOL defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "somebackend",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	platform: "glibc",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: "opentelemetry-auto-instrumentation-php",
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "somebackend",
+		//						},
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "PYTHONPATH defined as ValueFrom",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:      "PYTHONPATH",
+		//							ValueFrom: &corev1.EnvVarSource{},
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	platform: "glibc",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:      "PYTHONPATH",
+		//							ValueFrom: &corev1.EnvVarSource{},
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: fmt.Errorf("the container defines env var value via ValueFrom, envVar: %s", envPythonPath),
+		//},
+		//{
+		//	name: "musl platform defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{},
+		//			},
+		//		},
+		//	},
+		//	platform: "musl",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: phpVolumeName,
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation-musl/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "platform not defined",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{},
+		//			},
+		//		},
+		//	},
+		//	platform: "",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: phpVolumeName,
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//			},
+		//			Containers: []corev1.Container{
+		//				{
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
+		//{
+		//	name: "platform not supported",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{},
+		//			},
+		//		},
+		//	},
+		//	platform: "not-supported",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Containers: []corev1.Container{
+		//				{},
+		//			},
+		//		},
+		//	},
+		//	err: errors.New("provided instrumentation.opentelemetry.io/otel-php-platform annotation value 'not-supported' is not supported"),
+		//},
+		//{
+		//	name: "inject into init container",
+		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
+		//	pod: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name: "my-init",
+		//				},
+		//			},
+		//		},
+		//	},
+		//	platform: "glibc",
+		//	expected: corev1.Pod{
+		//		Spec: corev1.PodSpec{
+		//			Volumes: []corev1.Volume{
+		//				{
+		//					Name: phpVolumeName,
+		//					VolumeSource: corev1.VolumeSource{
+		//						EmptyDir: &corev1.EmptyDirVolumeSource{
+		//							SizeLimit: &defaultVolumeLimitSize,
+		//						},
+		//					},
+		//				},
+		//			},
+		//			InitContainers: []corev1.Container{
+		//				{
+		//					Name:    "opentelemetry-auto-instrumentation-php",
+		//					Image:   "foo/bar:1",
+		//					Command: []string{"cp", "-r", "/autoinstrumentation/.", "/otel-auto-instrumentation-php"},
+		//					VolumeMounts: []corev1.VolumeMount{{
+		//						Name:      "opentelemetry-auto-instrumentation-php",
+		//						MountPath: "/otel-auto-instrumentation-php",
+		//					}},
+		//				},
+		//				{
+		//					Name: "my-init",
+		//					VolumeMounts: []corev1.VolumeMount{
+		//						{
+		//							Name:      "opentelemetry-auto-instrumentation-php",
+		//							MountPath: "/otel-auto-instrumentation-php",
+		//						},
+		//					},
+		//					Env: []corev1.EnvVar{
+		//						{
+		//							Name:  "PYTHONPATH",
+		//							Value: fmt.Sprintf("%s:%s", "/otel-auto-instrumentation-php/opentelemetry/instrumentation/auto_instrumentation", "/otel-auto-instrumentation-php"),
+		//						},
+		//						{
+		//							Name:  "OTEL_EXPORTER_OTLP_PROTOCOL",
+		//							Value: "http/protobuf",
+		//						},
+		//						{
+		//							Name:  "OTEL_TRACES_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_METRICS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//						{
+		//							Name:  "OTEL_LOGS_EXPORTER",
+		//							Value: "otlp",
+		//						},
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	err: nil,
+		//},
 	}
 
 	injector := sdkInjector{}

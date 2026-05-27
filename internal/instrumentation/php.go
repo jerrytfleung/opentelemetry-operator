@@ -45,7 +45,7 @@ func phpPlatformSrc(platform string) (string, error) {
 }
 
 func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, platform string) error {
-	volume := instrVolume(phpSpec.VolumeClaimTemplate, pythonVolumeName, phpSpec.VolumeSizeLimit)
+	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
 
 	err := validateContainerEnv(container.Env, phpIniScanDirEnvVarName, otelPhpAutoloadEnabledrEnvVarName)
 	if err != nil {
@@ -59,16 +59,6 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, 
 
 	// inject Php instrumentation spec env vars.
 	container.Env = appendIfNotSet(container.Env, phpSpec.Env...)
-
-	container.Env = appendIfNotSet(container.Env, corev1.EnvVar{
-		Name:  phpIniScanDirEnvVarName,
-		Value: phpIniScanDirEnvVarValue,
-	})
-
-	container.Env = appendIfNotSet(container.Env, corev1.EnvVar{
-		Name:  otelPhpAutoloadEnabledrEnvVarName,
-		Value: otelPhpAutoloadEnabledrEnvVarValue,
-	})
 
 	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 		Name:      volume.Name,
