@@ -508,10 +508,10 @@ func (in *InstrumentationSpec) DeepCopyInto(out *InstrumentationSpec) {
 	}
 	in.Java.DeepCopyInto(&out.Java)
 	in.NodeJS.DeepCopyInto(&out.NodeJS)
+	in.Php.DeepCopyInto(&out.Php)
 	in.Python.DeepCopyInto(&out.Python)
 	in.DotNet.DeepCopyInto(&out.DotNet)
 	in.Go.DeepCopyInto(&out.Go)
-	in.Php.DeepCopyInto(&out.Php)
 	in.ApacheHttpd.DeepCopyInto(&out.ApacheHttpd)
 	in.Nginx.DeepCopyInto(&out.Nginx)
 	if in.InitContainerSecurityContext != nil {
