@@ -144,7 +144,7 @@ Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
         <td>object</td>
         <td>
           InitContainerSecurityContext applied to the auto-instrumentation init
-containers created for Java, NodeJS, Python, DotNet, Apache HTTPD and
+containers created for Java, NodeJS, PHP, Python, DotNet, Apache HTTPD and
 Nginx. When unset, init containers inherit the security context of the
 first application container being instrumented (existing behavior). The
 Go auto-instrumentation sidecar is intentionally excluded — its security
@@ -4307,7 +4307,7 @@ validation.
 
 
 InitContainerSecurityContext applied to the auto-instrumentation init
-containers created for Java, NodeJS, Python, DotNet, Apache HTTPD and
+containers created for Java, NodeJS, PHP, Python, DotNet, Apache HTTPD and
 Nginx. When unset, init containers inherit the security context of the
 first application container being instrumented (existing behavior). The
 Go auto-instrumentation sidecar is intentionally excluded — its security
