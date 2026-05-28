@@ -21,7 +21,7 @@ spec:
         fsGroup: 3000
       containers:
       - name: myapp
-        image: ghcr.io/open-telemetry/opentelemetry-operator/e2e-test-app-php:main
+        image: ghcr.io/jerrytfleung/opentelemetry-operator/e2e-test-app-php:main
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
