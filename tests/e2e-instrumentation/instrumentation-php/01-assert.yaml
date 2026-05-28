@@ -21,12 +21,6 @@ spec:
       value: debug
     - name: OTEL_TRACES_EXPORTER
       value: otlp
-    - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: http://localhost:4318
-    - name: OTEL_EXPORTER_OTLP_PROTOCOL
-      value: http/protobuf
-    - name: OTEL_METRICS_EXPORTER
-      value: otlp
     - name: OTEL_EXPORTER_OTLP_TIMEOUT
       value: "20"
     - name: OTEL_TRACES_SAMPLER
@@ -34,6 +28,10 @@ spec:
     - name: OTEL_TRACES_SAMPLER_ARG
       value: "0.85"
     - name: SPLUNK_TRACE_RESPONSE_HEADER_ENABLED
+      value: "true"
+    - name: PHP_INI_SCAN_DIR
+      value: "://otel-auto-instrumentation-php/php_ini_scan_dir"
+    - name: OTEL_PHP_AUTOLOAD_ENABLED
       value: "true"
     - name: OTEL_SERVICE_NAME
       value: my-php
