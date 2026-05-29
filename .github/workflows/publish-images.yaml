@@ -10,7 +10,6 @@ on:
 env:
   PLATFORMS: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
   GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/opentelemetry-operator/opentelemetry-operator
-  DOCKERHUB_IMAGE: otel/opentelemetry-operator
 
 permissions:
   contents: read
@@ -72,7 +71,6 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ env.DOCKERHUB_IMAGE }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -96,13 +94,6 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-
-      - name: Log into Docker.io
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        if: ${{ github.event_name == 'push' }}
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to GitHub Package Registry
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
@@ -131,4 +122,3 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           make cosign-sign IMAGE="${GHCR_IMAGE}" DIGEST="${DIGEST}"
-          make cosign-sign IMAGE="${DOCKERHUB_IMAGE}" DIGEST="${DIGEST}"

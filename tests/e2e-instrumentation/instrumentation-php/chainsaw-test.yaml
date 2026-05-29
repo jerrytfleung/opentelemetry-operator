@@ -8,7 +8,7 @@ spec:
     - name: podLabelSelector
       value: app=my-php
     - name: appPort
-      value: "80"
+      value: "8080"
     - name: appPath
       value: /rolldice
     - name: collectorLabelSelector
@@ -18,7 +18,7 @@ spec:
     - name: containerName
       value: otc-container
     - name: retryTimeout
-      value: "120"
+      value: "240"
     - name: retrySleep
       value: "5"
     - name: searchStrings
@@ -33,13 +33,13 @@ spec:
   - name: Add OpenShift namespace annotations
     use:
       template: ../../step-templates/openshift-namespace-annotations.yaml
-  - name: step-00
+  - name: Setup instrumentation and collector
     try:
     - apply:
         file: 00-install-collector.yaml
     - apply:
         file: 00-install-instrumentation.yaml
-  - name: step-01
+  - name: Install test app
     try:
     - apply:
         file: 01-install-app.yaml
