@@ -106,11 +106,6 @@ spec:
     - name: Install test app
       try:
         - apply:
-            bindings:
-              - name: APP_IMAGE_TAG
-                value: main-3.10
-              - name: APP_IMAGE
-                value: (join(':', ['ghcr.io/open-telemetry/opentelemetry-operator/e2e-test-app-python', $APP_IMAGE_TAG]))
             file: 01-install-app.yaml
         - assert:
             file: 01-assert.yaml
