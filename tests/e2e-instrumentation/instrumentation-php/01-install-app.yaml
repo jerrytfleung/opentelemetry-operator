@@ -12,7 +12,7 @@ spec:
       labels:
         app: my-php
       annotations:
-        instrumentation.opentelemetry.io/inject-php: "true"
+        instrumentation.opentelemetry.io/inject-python: "true"
     spec:
       securityContext:
         runAsUser: 1000
@@ -21,8 +21,8 @@ spec:
       containers:
       - name: myapp
         ports:
-          - containerPort: 8080
-        image: ghcr.io/jerrytfleung/opentelemetry-operator/e2e-test-app-php:main
+        - containerPort: 8080
+        image: ghcr.io/jerrytfleung/opentelemetry-operator/e2e-test-app-python:main
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
