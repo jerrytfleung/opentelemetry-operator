@@ -7,7 +7,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 $app = AppFactory::create();
 
-$app->get('/rolldice', function (Request $request, Response $response) {
+$app->get('/', function (Request $request, Response $response) {
     $result = random_int(1,6);
     $response->getBody()->write(strval($result));
     return $response;
