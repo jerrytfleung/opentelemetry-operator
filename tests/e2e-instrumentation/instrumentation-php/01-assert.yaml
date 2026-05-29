@@ -58,7 +58,7 @@ spec:
         ( contains(@, join('', ['service.instance.id=', $namespace, '.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).myapp'])  ) ): true
         ( contains(@, 'service.version=main') ): true
     ports:
-    - containerPort: 80
+    - containerPort: 8080
       protocol: TCP
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount

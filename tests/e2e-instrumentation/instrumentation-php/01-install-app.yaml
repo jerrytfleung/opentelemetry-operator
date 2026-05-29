@@ -21,7 +21,7 @@ spec:
       containers:
       - name: myapp
         ports:
-          - containerPort: 80
+          - containerPort: 8080
         image: ghcr.io/jerrytfleung/opentelemetry-operator/e2e-test-app-php:main
         securityContext:
           allowPrivilegeEscalation: false
@@ -30,7 +30,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /rolldice
-            port: 80
+            port: 8080
             scheme: HTTP
           initialDelaySeconds: 5
           periodSeconds: 15

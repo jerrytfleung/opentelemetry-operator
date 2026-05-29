@@ -13,6 +13,10 @@ RUN echo "    AllowOverride All" >> /etc/apache2/apache2.conf
 RUN echo "    Require all granted" >> /etc/apache2/apache2.conf
 RUN echo "</Directory>" >> /etc/apache2/apache2.conf
 
+RUN sed -i 's/80/8080/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
+
+EXPOSE 8080
+
 WORKDIR /var/www/html
 
 COPY . .
