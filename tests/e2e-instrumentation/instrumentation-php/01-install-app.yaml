@@ -12,7 +12,6 @@ spec:
       labels:
         app: my-php
       annotations:
-        sidecar.opentelemetry.io/inject: "true"
         instrumentation.opentelemetry.io/inject-php: "true"
     spec:
       securityContext:
@@ -21,8 +20,19 @@ spec:
         fsGroup: 3000
       containers:
       - name: myapp
+        ports:
+          - containerPort: 80
         image: ghcr.io/jerrytfleung/opentelemetry-operator/e2e-test-app-php:main
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
+        readinessProbe:
+          httpGet:
+            path: /rolldice
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 15
+          timeoutSeconds: 2
+          failureThreshold: 3
