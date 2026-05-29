@@ -54,7 +54,7 @@ spec:
       readOnly: true
     - mountPath: /otel-auto-instrumentation-php
       name: opentelemetry-auto-instrumentation-php
-    name: otc-container
+  - name: otc-container
   initContainers:
   - name: opentelemetry-auto-instrumentation-php
 status:
