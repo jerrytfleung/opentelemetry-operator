@@ -2,11 +2,11 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: instrumentation-python
+  name: instrumentation-php
 spec:
   bindings:
     - name: podLabelSelector
-      value: app=my-python
+      value: app=my-php
     - name: appPort
       value: "8080"
     - name: appPath
@@ -47,7 +47,7 @@ spec:
         file: 01-assert.yaml
     catch:
       - podLogs:
-          selector: app=my-python
+          selector: app=my-php
   - name: Make a request to the app
     use:
       template: ../../step-templates/app-http-request.yaml

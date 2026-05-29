@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-python
+  name: my-php
 spec:
   selector:
     matchLabels:
-      app: my-python
+      app: my-php
   replicas: 1
   template:
     metadata:
       labels:
-        app: my-python
+        app: my-php
       annotations:
-        instrumentation.opentelemetry.io/inject-python: "true"
+        instrumentation.opentelemetry.io/inject-php: "true"
     spec:
       securityContext:
         runAsUser: 1000

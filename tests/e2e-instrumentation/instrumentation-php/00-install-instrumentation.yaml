@@ -1,7 +1,7 @@
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
-  name: python
+  name: php
 spec:
   env:
     - name: OTEL_EXPORTER_OTLP_TIMEOUT
@@ -18,7 +18,7 @@ spec:
   sampler:
     type: parentbased_traceidratio
     argument: "0.25"
-  python:
+  php:
     env:
       - name: OTEL_LOG_LEVEL
         value: "debug"
@@ -26,7 +26,3 @@ spec:
         value: otlp
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://deployment-collector:4318
-      # Disabling system_metrics instrumenation as the test app is built using Alpine
-      # Instrumentation with metrics is tested in test instrumenation-python-musl
-      - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
-        value: "system_metrics"
