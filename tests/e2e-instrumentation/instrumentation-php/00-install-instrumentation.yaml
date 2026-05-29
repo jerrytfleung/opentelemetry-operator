@@ -18,7 +18,7 @@ spec:
   sampler:
     type: parentbased_traceidratio
     argument: "0.25"
-  php:
+  python:
     env:
       - name: OTEL_LOG_LEVEL
         value: "debug"
