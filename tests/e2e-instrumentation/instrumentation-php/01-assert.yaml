@@ -32,7 +32,7 @@ spec:
     - name: SPLUNK_TRACE_RESPONSE_HEADER_ENABLED
       value: "true"
     - name: PHP_INI_SCAN_DIR
-      value: ":/otel-auto-instrumentation-php/php_ini_scan_dir"
+      value: "://otel-auto-instrumentation-php/php_ini_scan_dir"
     - name: OTEL_PHP_AUTOLOAD_ENABLED
       value: "true"
     - name: OTEL_SERVICE_NAME
