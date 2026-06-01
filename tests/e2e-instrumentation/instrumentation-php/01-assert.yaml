@@ -23,6 +23,8 @@ spec:
       value: debug
     - name: OTEL_TRACES_EXPORTER
       value: otlp
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: http://deployment-collector:4318
     - name: OTEL_EXPORTER_OTLP_TIMEOUT
       value: "20000"
     - name: OTEL_TRACES_SAMPLER

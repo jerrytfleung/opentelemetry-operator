@@ -21,7 +21,7 @@ spec:
       containers:
       - name: myapp
         ports:
-          - containerPort: 8080
+        - containerPort: 8080
         image: ghcr.io/jerrytfleung/opentelemetry-operator/e2e-test-app-php:main
         securityContext:
           allowPrivilegeEscalation: false

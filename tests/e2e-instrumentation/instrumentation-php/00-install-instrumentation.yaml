@@ -26,4 +26,3 @@ spec:
         value: otlp
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://deployment-collector:4318
-
