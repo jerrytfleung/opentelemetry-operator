@@ -4,8 +4,6 @@
 package instrumentation
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
@@ -20,7 +18,7 @@ const (
 	//       PHP_INI_SCAN_DIR=:/usr/local/etc/php.d php
 	//                        ^ separator after empty string
 	//           PHP will load all files in /etc/php.d/*.ini, then /usr/local/etc/php.d/*.ini as configuration files.
-	phpIniScanDirEnvVarValue = ":/" + phpInstrMountPath + "/php_ini_scan_dir"
+	phpIniScanDirEnvVarValue = ":" + phpInstrMountPath + " php"
 
 	otelPhpAutoloadEnabledrEnvVarName  = "OTEL_PHP_AUTOLOAD_ENABLED"
 	otelPhpAutoloadEnabledrEnvVarValue = "true"
@@ -32,17 +30,17 @@ const (
 	phpVolumeName        = volumeName + "-php"
 )
 
-func phpPlatformSrc(platform string) (string, error) {
-	// Validate platform
-	switch platform {
-	case "", glibcLinux:
-		return glibcLinuxPhpAutoInstrumentationSrc, nil
-	case muslLinux:
-		return muslLinuxPhpAutoInstrumentationSrc, nil
-	default:
-		return "", fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-platform annotation value '%s' is not supported", platform)
-	}
-}
+//func phpPlatformSrc(platform string) (string, error) {
+//	// Validate platform
+//	switch platform {
+//	case "", glibcLinux:
+//		return glibcLinuxPhpAutoInstrumentationSrc, nil
+//	case muslLinux:
+//		return muslLinuxPhpAutoInstrumentationSrc, nil
+//	default:
+//		return "", fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-platform annotation value '%s' is not supported", platform)
+//	}
+//}
 
 func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, platform string) error {
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
@@ -52,10 +50,10 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, 
 		return err
 	}
 
-	_, err = phpPlatformSrc(platform)
-	if err != nil {
-		return err
-	}
+	//_, err = phpPlatformSrc(platform)
+	//if err != nil {
+	//	return err
+	//}
 
 	// inject Php instrumentation spec env vars.
 	container.Env = appendIfNotSet(container.Env, phpSpec.Env...)
@@ -72,7 +70,7 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName,
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
 
 	// This has been validated already
-	autoInstrumentationSrc, _ := phpPlatformSrc(platform)
+	// autoInstrumentationSrc, _ := phpPlatformSrc(platform)
 
 	// We just inject Volumes and init containers for the first processed container.
 	if isInitContainerMissing(pod, phpInitContainerName) {
@@ -81,7 +79,8 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName,
 		initContainer := corev1.Container{
 			Name:      phpInitContainerName,
 			Image:     phpSpec.Image,
-			Command:   []string{"cp", "-r", autoInstrumentationSrc, phpInstrMountPath},
+			Command:   []string{"/bin/sh", "-c"},
+			Args:      []string{phpAgentScript, "--", phpInstrMountPath},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      volume.Name,

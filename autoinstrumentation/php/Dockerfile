@@ -94,16 +94,16 @@ RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
 
 FROM busybox
 ARG version
-COPY --from=build-81 /build /autoinstrumentation/8.1
-COPY --from=build-82 /build /autoinstrumentation/8.2
-COPY --from=build-83 /build /autoinstrumentation/8.3
-COPY --from=build-84 /build /autoinstrumentation/8.4
-COPY --from=build-85 /build /autoinstrumentation/8.5
-COPY --from=build-musl-81 /build /autoinstrumentation/8.1
-COPY --from=build-musl-82 /build /autoinstrumentation/8.2
-COPY --from=build-musl-83 /build /autoinstrumentation/8.3
-COPY --from=build-musl-84 /build /autoinstrumentation/8.4
-COPY --from=build-musl-85 /build /autoinstrumentation/8.5
+COPY --from=build-81 /build /autoinstrumentation/20210902
+COPY --from=build-82 /build /autoinstrumentation/20220829
+COPY --from=build-83 /build /autoinstrumentation/20230831
+COPY --from=build-84 /build /autoinstrumentation/20240924
+COPY --from=build-85 /build /autoinstrumentation/20250925
+COPY --from=build-musl-81 /build /autoinstrumentation/20210902
+COPY --from=build-musl-82 /build /autoinstrumentation/20220829
+COPY --from=build-musl-83 /build /autoinstrumentation/20230831
+COPY --from=build-musl-84 /build /autoinstrumentation/20240924
+COPY --from=build-musl-85 /build /autoinstrumentation/20250925
 
 RUN echo "extension=opentelemetry.so" > /autoinstrumentation/opentelemetry.ini
 RUN echo $version > /autoinstrumentation/version.txt
