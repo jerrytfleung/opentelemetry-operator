@@ -78,12 +78,12 @@ RUN apk add autoconf build-base
 RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
 
-FROM php:8.4-alpine3.22 AS build-musl-84
-ARG version
-WORKDIR /build/musl
-RUN apk add autoconf build-base
-RUN pecl install opentelemetry-$version
-RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
+#FROM php:8.4-alpine3.22 AS build-musl-84
+#ARG version
+#WORKDIR /build/musl
+#RUN apk add autoconf build-base
+#RUN pecl install opentelemetry-$version
+#RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
 
 FROM php:8.5-alpine AS build-musl-85
 ARG version
@@ -102,7 +102,7 @@ COPY --from=build-85 /build /autoinstrumentation/20250925
 COPY --from=build-musl-81 /build /autoinstrumentation/20210902
 COPY --from=build-musl-82 /build /autoinstrumentation/20220829
 COPY --from=build-musl-83 /build /autoinstrumentation/20230831
-COPY --from=build-musl-84 /build /autoinstrumentation/20240924
+#COPY --from=build-musl-84 /build /autoinstrumentation/20240924
 COPY --from=build-musl-85 /build /autoinstrumentation/20250925
 
 RUN echo "extension=opentelemetry.so" > /autoinstrumentation/opentelemetry.ini

@@ -11,53 +11,33 @@ import (
 
 const (
 	phpInstrMountPath = "/otel-auto-instrumentation-php"
+	phpCloneMountPath = "/otel-auto-instrumentation-php-clone"
 
-	phpIniScanDirEnvVarName = "PHP_INI_SCAN_DIR"
 	// https://www.php.net/manual/en/configuration.file.php//configuration.file.scan
-	//       If a blank directory is given in PHP_INI_SCAN_DIR, PHP will also scan the directory given at compile time via --with-config-file-scan-dir.
-	//       PHP_INI_SCAN_DIR=:/usr/local/etc/php.d php
-	//                        ^ separator after empty string
-	//           PHP will load all files in /etc/php.d/*.ini, then /usr/local/etc/php.d/*.ini as configuration files.
+	phpIniScanDirEnvVarName  = "PHP_INI_SCAN_DIR"
 	phpIniScanDirEnvVarValue = ":" + phpInstrMountPath + " php"
 
 	otelPhpAutoloadEnabledrEnvVarName  = "OTEL_PHP_AUTOLOAD_ENABLED"
 	otelPhpAutoloadEnabledrEnvVarValue = "true"
 
-	glibcLinuxPhpAutoInstrumentationSrc = "/autoinstrumentation/."
-	muslLinuxPhpAutoInstrumentationSrc  = "/autoinstrumentation-musl/."
+	linuxPhpAutoInstrumentationSrc = "/autoinstrumentation/."
 
-	phpInitContainerName = initContainerName + "-php"
-	phpVolumeName        = volumeName + "-php"
+	phpInitContainerName  = initContainerName + "-php"
+	phpVolumeName         = volumeName + "-php"
+	phpCloneContainerName = initContainerName + "-clone-php"
+	phpCloneVolumeName    = volumeName + "-clone-php"
 )
 
-//func phpPlatformSrc(platform string) (string, error) {
-//	// Validate platform
-//	switch platform {
-//	case "", glibcLinux:
-//		return glibcLinuxPhpAutoInstrumentationSrc, nil
-//	case muslLinux:
-//		return muslLinuxPhpAutoInstrumentationSrc, nil
-//	default:
-//		return "", fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-platform annotation value '%s' is not supported", platform)
-//	}
-//}
-
 func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, platform string) error {
-	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
-
 	err := validateContainerEnv(container.Env, phpIniScanDirEnvVarName, otelPhpAutoloadEnabledrEnvVarName)
 	if err != nil {
 		return err
 	}
 
-	//_, err = phpPlatformSrc(platform)
-	//if err != nil {
-	//	return err
-	//}
-
 	// inject Php instrumentation spec env vars.
 	container.Env = appendIfNotSet(container.Env, phpSpec.Env...)
 
+	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
 	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 		Name:      volume.Name,
 		MountPath: phpInstrMountPath,
@@ -66,13 +46,10 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, 
 	return nil
 }
 
-func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName, platform string, instSpec v1alpha1.InstrumentationSpec) corev1.Pod {
+func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, container *corev1.Container, instSpec v1alpha1.InstrumentationSpec) corev1.Pod {
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
-
-	// This has been validated already
-	// autoInstrumentationSrc, _ := phpPlatformSrc(platform)
-
-	// We just inject Volumes and init containers for the first processed container.
+	cloneVolume := instrVolume(phpSpec.VolumeClaimTemplate, phpCloneVolumeName, phpSpec.VolumeSizeLimit)
+	// init container
 	if isInitContainerMissing(pod, phpInitContainerName) {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 
@@ -80,9 +57,12 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName,
 			Name:      phpInitContainerName,
 			Image:     phpSpec.Image,
 			Command:   []string{"/bin/sh", "-c"},
-			Args:      []string{phpAgentScript, "--", phpInstrMountPath},
+			Args:      []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
+				Name:      cloneVolume.Name,
+				MountPath: phpCloneMountPath,
+			}, {
 				Name:      volume.Name,
 				MountPath: phpInstrMountPath,
 			}},
@@ -91,6 +71,27 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName,
 
 		pod.Spec.InitContainers = insertInitContainer(&pod, initContainer, firstContainerName)
 	}
+
+	// PHP clone container; insert before init container
+	if isInitContainerMissing(pod, phpCloneContainerName) {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, cloneVolume)
+
+		initContainer := corev1.Container{
+			Name:      phpCloneContainerName,
+			Image:     container.Image,
+			Command:   []string{"/bin/sh", "-c"},
+			Args:      []string{phpCloneScript},
+			Resources: phpSpec.Resources,
+			VolumeMounts: []corev1.VolumeMount{{
+				Name:      cloneVolume.Name,
+				MountPath: phpCloneMountPath,
+			}},
+			ImagePullPolicy: instSpec.ImagePullPolicy,
+		}
+
+		pod.Spec.InitContainers = insertInitContainer(&pod, initContainer, phpInitContainerName)
+	}
+
 	return pod
 }
 
@@ -98,12 +99,13 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName,
 // Containers must point into the provided pod and be ordered with init containers first.
 func injectPhpSDK(phpSpec v1alpha1.Php, pod *corev1.Pod, containers []*corev1.Container, platform string, instSpec v1alpha1.InstrumentationSpec) error {
 	for _, container := range containers {
+		if isInitContainer(container.Name, pod) {
+			continue
+		}
 		if err := injectPhpSDKToContainer(phpSpec, container, platform); err != nil {
 			return err
 		}
-	}
-	if len(containers) > 0 {
-		*pod = injectPhpSDKToPod(phpSpec, *pod, containers[0].Name, platform, instSpec)
+		*pod = injectPhpSDKToPod(phpSpec, *pod, containers[0].Name, container, instSpec)
 	}
 	return nil
 }

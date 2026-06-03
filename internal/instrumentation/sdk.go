@@ -135,6 +135,10 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 
 	if len(containers) > 0 {
 		for _, container := range containers {
+			if isInitContainer(container.Name, &pod) {
+				i.logger.Info("Skipping PHP injection", "reason", errors.New("is init container"), "container", container.Name)
+				continue
+			}
 			if err := injectPhpSDKToContainer(otelinst.Spec.Php, container, platform); err != nil {
 				i.logger.Info("Skipping PHP SDK injection", "reason", err.Error(), "container", container.Name)
 			} else {
@@ -142,10 +146,9 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 				i.injectDefaultPhpEnvVars(container)
 				pod = i.injectCommonSDKConfig(ctx, otelinst, ns, pod, container, container)
 			}
+			pod = injectPhpSDKToPod(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
+			pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpInitContainerName)
 		}
-
-		pod = injectPhpSDKToPod(otelinst.Spec.Php, pod, containers[0].Name, platform, otelinst.Spec)
-		pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpInitContainerName)
 	}
 
 	return pod

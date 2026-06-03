@@ -48,6 +48,14 @@ spec:
     catch:
       - podLogs:
           selector: app=my-php
+  - name: Check
+    try:
+    - script:
+        content: |
+          echo "status: ready"
+        check:
+          # Asserts that stdout contains the expected substring
+          (contains($stdout, 'ready')): true
   - name: Make a request to the app
     use:
       template: ../../step-templates/app-http-request.yaml
