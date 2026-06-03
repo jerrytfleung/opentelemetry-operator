@@ -4,6 +4,8 @@
 set -e
 set -x
 
+echo "PHP auto-instrumentation init container started with args: $*"
+
 mounted_dir="$1"
 
 cp -r /autoinstrumentation/opentelemetry.ini "$mounted_dir"
@@ -19,4 +21,6 @@ if [ -f /etc/alpine-release ]; then
     standard_c_lib=musl
 fi
 
-cp -r /autoinstrumentation/$api/$standard_c_lib/* $extension_dir
+cp -r /autoinstrumentation/"$api"/"$standard_c_lib"/* "$extension_dir"
+
+echo "PHP auto-instrumentation init container completed successfully"
