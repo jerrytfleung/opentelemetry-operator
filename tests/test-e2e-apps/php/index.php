@@ -9,8 +9,14 @@ $app = AppFactory::create();
 
 $app->get('/', function (Request $request, Response $response) {
     $all_envs = getenv();
-    $all_values_string = implode(", ", $all_envs);
-    $response->getBody()->write(all_values_string);
+    $formatted = [];
+
+    foreach ($all_envs as $key => $value) {
+        $formatted[] = "$key=$value"; // Format as KEY=VALUE
+    }
+    // Implode using a comma or a newline
+    $envString = implode('; ', $formatted);
+    $response->getBody()->write($envString);
     // $result = random_int(1,6);
     // $response->getBody()->write(strval($result));
     return $response;
