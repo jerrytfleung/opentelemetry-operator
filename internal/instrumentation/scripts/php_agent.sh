@@ -10,16 +10,18 @@ mounted_dir="$1"
 
 echo "Copying auto-instrumentation files to mounted directory: $mounted_dir"
 
-cp -r /autoinstrumentation/opentelemetry.ini "$mounted_dir"
-cp -r /autoinstrumentation/version.txt "$mounted_dir"
+ls -l
+
+#cp -r /autoinstrumentation/opentelemetry.ini "$mounted_dir"
+#cp -r /autoinstrumentation/version.txt "$mounted_dir"
 
 extension_dir=$(php -i | grep "^extension_dir" | awk '{print $5}')
-
 echo "PHP extension directory detected: $extension_dir"
 
-api=$(php -i | grep "^PHP API => " | awk '{print $4}')
-
-echo "PHP API version detected: $api"
+#
+#api=$(php -i | grep "^PHP API => " | awk '{print $4}')
+#
+#echo "PHP API version detected: $api"
 
 #
 ## check if alpine
