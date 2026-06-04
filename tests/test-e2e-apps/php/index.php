@@ -8,18 +8,25 @@ require __DIR__ . '/vendor/autoload.php';
 $app = AppFactory::create();
 
 $app->get('/', function (Request $request, Response $response) {
-    $all_envs = getenv();
-    $formatted = [];
+    ob_start();
+    phpinfo();
+    $phpinfo = ob_get_clean();
 
-    foreach ($all_envs as $key => $value) {
-        $formatted[] = "$key=$value"; // Format as KEY=VALUE
-    }
-    // Implode using a comma or a newline
-    $envString = implode('; ', $formatted);
-    $response->getBody()->write($envString);
+    $response->getBody()->write($phpinfo);
+    return $response->withHeader('Content-Type', 'text/html');
+
+//     $all_envs = getenv();
+//     $formatted = [];
+//
+//     foreach ($all_envs as $key => $value) {
+//         $formatted[] = "$key=$value"; // Format as KEY=VALUE
+//     }
+//     // Implode using a comma or a newline
+//     $envString = implode('; ', $formatted);
+//     $response->getBody()->write($envString);
     // $result = random_int(1,6);
     // $response->getBody()->write(strval($result));
-    return $response;
+    // return $response;
 });
 
 $app->run();
