@@ -83,6 +83,11 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 		}
 
 		pod.Spec.InitContainers = insertInitContainer(&pod, initContainer, phpInitContainerName)
+
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: phpInstrMountPath,
+		})
 	}
 
 	return pod
