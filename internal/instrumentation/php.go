@@ -15,7 +15,7 @@ const (
 
 	// https://www.php.net/manual/en/configuration.file.php//configuration.file.scan
 	phpIniScanDirEnvVarName  = "PHP_INI_SCAN_DIR"
-	phpIniScanDirEnvVarValue = ":" + phpInstrMountPath + " php"
+	phpIniScanDirEnvVarValue = ":" + phpInstrMountPath
 
 	otelPhpAutoloadEnabledrEnvVarName  = "OTEL_PHP_AUTOLOAD_ENABLED"
 	otelPhpAutoloadEnabledrEnvVarValue = "true"
