@@ -134,7 +134,7 @@ func AutoInstrumentationPhp() string {
 	if autoInstrumentationPhp != "" {
 		return autoInstrumentationPhp
 	}
-	return "0.0.0"
+	return "main"
 }
 
 func AutoInstrumentationPython() string {
