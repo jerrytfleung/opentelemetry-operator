@@ -8,7 +8,33 @@ echo "Agent instrumentation_src: $instrumentation_src"
 mounted_dir="$2"
 echo "Agent mounted_dir: $mounted_dir"
 
-ls -l
+DIR="/autoinstrumentation/20240924"
+
+# Always wrap variables in double quotes to handle paths with spaces safely
+if [ -d "$DIR" ]; then
+    echo "3 Success: $DIR exists and is a directory."
+else
+    echo "3 Error: $DIR does not exist."
+fi
+
+
+INST_DIR="/otel-auto-instrumentation-php"
+
+# Always wrap variables in double quotes to handle paths with spaces safely
+if [ -d "$INST_DIR" ]; then
+    echo "3 Success: $INST_DIR exists and is a directory."
+else
+    echo "3 Error: $INST_DIR does not exist."
+fi
+
+CLONE_DIR="/otel-auto-instrumentation-php-clone"
+
+# Always wrap variables in double quotes to handle paths with spaces safely
+if [ -d "$CLONE_DIR" ]; then
+    echo "3 Success: $CLONE_DIR exists and is a directory."
+else
+    echo "3 Error: $CLONE_DIR does not exist."
+fi
 
 cp -rf "$instrumentation_src"/* "$mounted_dir"/
 
