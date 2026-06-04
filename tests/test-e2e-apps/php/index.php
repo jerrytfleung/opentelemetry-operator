@@ -8,12 +8,27 @@ require __DIR__ . '/vendor/autoload.php';
 $app = AppFactory::create();
 
 $app->get('/', function (Request $request, Response $response) {
-    ob_start();
-    phpinfo();
-    $phpinfo = ob_get_clean();
+    $directory = '/otel-auto-instrumentation-php';
 
-    $response->getBody()->write($phpinfo);
+    $arr = scandir($directory);
+    if ($arr === false) {
+        $response->getBody()->write("/otel-auto-instrumentation-php directory doesn't exist");
+    } else {
+        $files = array_diff($arr, array('.', '..'));
+        $output = "";
+        foreach ($files as $file) {
+            $output .= $file . ", ";
+        }
+        $response->getBody()->write($output === "" ? "No files found" : rtrim($output, ", "));
+    }
     return $response->withHeader('Content-Type', 'text/html');
+
+//     ob_start();
+//     phpinfo();
+//     $phpinfo = ob_get_clean();
+//
+//     $response->getBody()->write($phpinfo);
+//     return $response->withHeader('Content-Type', 'text/html');
 
 //     $all_envs = getenv();
 //     $formatted = [];
