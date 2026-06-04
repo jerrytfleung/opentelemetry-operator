@@ -105,7 +105,7 @@ COPY --from=build-musl-83 /build /autoinstrumentation/20230831
 #COPY --from=build-musl-84 /build /autoinstrumentation/20240924
 COPY --from=build-musl-85 /build /autoinstrumentation/20250925
 
-RUN echo "extension=opentelemetry.so" > /autoinstrumentation/opentelemetry.ini
+RUN echo "extension=/otel-auto-instrumentation-php/opentelemetry.so" > /autoinstrumentation/opentelemetry.ini
 RUN echo $version > /autoinstrumentation/version.txt
 
 RUN chmod -R go+r /autoinstrumentation
