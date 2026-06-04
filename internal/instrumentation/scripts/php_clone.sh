@@ -6,6 +6,15 @@
 #
 set -e
 
+DIR="/otel-auto-instrumentation-php-clone"
+
+# Always wrap variables in double quotes to handle paths with spaces safely
+if [ -d "$DIR" ]; then
+    echo "1 Success: $DIR exists and is a directory."
+else
+    echo "1 Error: $DIR does not exist."
+fi
+
 extension_dir=$(php -i | grep "^extension_dir" | awk '{print $5}')
 echo "$extension_dir" > /otel-auto-instrumentation-php-clone/extension_dir.txt
 
@@ -27,3 +36,10 @@ echo "Read api: $a"
 
 s=$(cat /otel-auto-instrumentation-php-clone/standard_c_lib.txt)
 echo "Read standard_c_lib: $s"
+
+# Always wrap variables in double quotes to handle paths with spaces safely
+if [ -d "$DIR" ]; then
+    echo "2 Success: $DIR exists and is a directory."
+else
+    echo "2 Error: $DIR does not exist."
+fi

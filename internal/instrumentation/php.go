@@ -43,6 +43,12 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, 
 		MountPath: phpInstrMountPath,
 	})
 
+	cloneVolume := instrVolume(phpSpec.VolumeClaimTemplate, phpCloneVolumeName, phpSpec.VolumeSizeLimit)
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		Name:      cloneVolume.Name,
+		MountPath: phpCloneMountPath,
+	})
+
 	return nil
 }
 
@@ -52,6 +58,7 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 	// init container
 	if isInitContainerMissing(pod, phpInitContainerName) {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+		pod.Spec.Volumes = append(pod.Spec.Volumes, cloneVolume)
 
 		initContainer := corev1.Container{
 			Name:      phpInitContainerName,
