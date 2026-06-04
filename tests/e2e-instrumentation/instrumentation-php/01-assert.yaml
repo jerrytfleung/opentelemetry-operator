@@ -67,8 +67,6 @@ spec:
       readOnly: true
     - mountPath: /otel-auto-instrumentation-php
       name: opentelemetry-auto-instrumentation-php
-    - mountPath: /otel-auto-instrumentation-php-clone
-      name: opentelemetry-auto-instrumentation-php-clone
 status:
   (containerStatuses[?name == 'myapp']):
   - name: myapp
