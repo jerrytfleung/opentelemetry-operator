@@ -6,6 +6,10 @@ COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
 
 RUN apt update && apt install -y git libzip-dev zip && docker-php-ext-install zip
 
+RUN pecl install protobuf
+
+RUN echo "extension=protobuf.so" > /usr/local/etc/php/conf.d/20_protobuf.ini
+
 COPY . .
 
 RUN composer install --ignore-platform-req=ext-opentelemetry
