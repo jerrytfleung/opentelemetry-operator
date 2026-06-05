@@ -21,4 +21,10 @@ spec:
         traces:
           receivers: [otlp]
           exporters: [debug]
+        metrics:
+          receivers: [otlp]
+          exporters: [debug]
+        logs:
+          receivers: [otlp]
+          exporters: [debug]
   mode: deployment
