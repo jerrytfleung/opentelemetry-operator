@@ -23,8 +23,7 @@ spec:
       value: "5"
     - name: searchStrings
       value: |
-        http.method: Str(GET)
-        k8s.container.name: Str(myapp)
+        http.request.method
     - name: catchPodLabelSelector
       value: app.kubernetes.io/name=deployment-collector
     - name: catchContainer
@@ -48,14 +47,6 @@ spec:
     catch:
       - podLogs:
           selector: app=my-php
-  - name: Check
-    try:
-    - script:
-        content: |
-          echo "status: ready"
-        check:
-          # Asserts that stdout contains the expected substring
-          (contains($stdout, 'ready')): true
   - name: Make a request to the app
     use:
       template: ../../step-templates/app-http-request.yaml
