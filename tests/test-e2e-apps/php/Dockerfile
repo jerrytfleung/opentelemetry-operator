@@ -8,6 +8,6 @@ RUN apt update && apt install -y git libzip-dev zip && docker-php-ext-install zi
 
 COPY . .
 
-RUN composer install
+RUN composer install --ignore-platform-req=ext-opentelemetry
 
 CMD ["php", "-S" , "0.0.0.0:8080"]
