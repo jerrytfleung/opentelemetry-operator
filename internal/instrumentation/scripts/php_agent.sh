@@ -32,8 +32,8 @@ else
     echo "3 Error: $CLONE_DIR does not exist."
 fi
 
-extension_dir=$(cat /otel-auto-instrumentation-php-clone/extension_dir.txt)
-echo "Agent extension_dir: $extension_dir"
+thread_safety=$(cat /otel-auto-instrumentation-php-clone/thread_safety.txt)
+echo "Agent thread_safety: $thread_safety"
 
 api=$(cat /otel-auto-instrumentation-php-clone/api.txt)
 echo "Agent api: $api"
@@ -41,5 +41,5 @@ echo "Agent api: $api"
 standard_c_lib=$(cat /otel-auto-instrumentation-php-clone/standard_c_lib.txt)
 echo "Agent standard_c_lib: $standard_c_lib"
 
-cp -rf "$instrumentation_src"/"$api"/"$standard_c_lib"/* "$mounted_dir"/
+cp -rf "$instrumentation_src"/"$api"/"$standard_c_lib"/"$thread_safety"/* "$mounted_dir"/
 cp -rf "$instrumentation_src"/opentelemetry.ini "$mounted_dir"/
