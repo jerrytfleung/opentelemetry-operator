@@ -15,8 +15,11 @@ else
     echo "1 Error: $DIR does not exist."
 fi
 
-extension_dir=$(php -i | grep "^extension_dir" | awk '{print $5}')
-echo "$extension_dir" > /otel-auto-instrumentation-php-clone/extension_dir.txt
+thread_safety=non-zts
+if [ "enabled" = "$(php -i | grep "^Thread Safety => " | awk '{print $4}')" ]; then
+    thread_safety=zts
+fi
+echo "$thread_safety" > /otel-auto-instrumentation-php-clone/thread_safety.txt
 
 api=$(php -i | grep "^PHP API => " | awk '{print $4}')
 echo "$api" > /otel-auto-instrumentation-php-clone/api.txt
@@ -28,8 +31,8 @@ if [ -f /etc/alpine-release ]; then
 fi
 echo "$standard_c_lib" > /otel-auto-instrumentation-php-clone/standard_c_lib.txt
 
-e=$(cat /otel-auto-instrumentation-php-clone/extension_dir.txt)
-echo "Read extension_dir: $e"
+t=$(cat /otel-auto-instrumentation-php-clone/thread_safety.txt)
+echo "Read thread_safety: $t"
 
 a=$(cat /otel-auto-instrumentation-php-clone/api.txt)
 echo "Read api: $a"
