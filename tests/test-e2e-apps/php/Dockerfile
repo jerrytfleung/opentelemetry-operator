@@ -8,10 +8,6 @@ RUN apt update && apt install -y git libzip-dev zip && docker-php-ext-install zi
 
 COPY . .
 
-RUN composer install --ignore-platform-req=ext-opentelemetry
-
-RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
-
-RUN sed -i 's|^auto_prepend_file =.*$|auto_prepend_file = /otel-auto-instrumentation-php/vendor/autoload.php|' /usr/local/etc/php/php.ini
+RUN composer install
 
 CMD ["php", "-S" , "0.0.0.0:8080"]
