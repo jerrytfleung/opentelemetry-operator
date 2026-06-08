@@ -3,14 +3,30 @@
   "description": "OpenTelemetry PHP auto-instrumentation packages to include in the image used by OpenTelemetry Operator for Kubernetes",
   "type": "project",
   "require": {
-    "open-telemetry/exporter-otlp": "^1.4",
-    "open-telemetry/opentelemetry-auto-slim": "^1.4.0",
-    "open-telemetry/sdk": "^1.14.0"
+    "open-telemetry/exporter-otlp": "1.4.0",
+    "open-telemetry/opentelemetry-auto-guzzle": "1.3.0",
+    "open-telemetry/opentelemetry-auto-http-async": "1.2.0",
+    "open-telemetry/opentelemetry-auto-laravel": "1.7.0",
+    "open-telemetry/opentelemetry-auto-psr15": "1.2.0",
+    "open-telemetry/opentelemetry-auto-psr18": "1.2.0",
+    "open-telemetry/opentelemetry-auto-slim": "1.4.0",
+    "open-telemetry/sdk": "1.14.0",
+    "php-http/guzzle7-adapter": "1.1.0"
+  },
+  "provide": {
+    "psr/http-client": "*",
+    "psr/http-server-middleware": "*",
+    "laravel/framework": "*",
+    "slim/slim": "*",
+    "symfony/http-client-contracts": "*",
+    "symfony/http-kernel": "*"
   },
   "config": {
+    "process-timeout": 0,
+    "sort-packages": true,
     "allow-plugins": {
-      "php-http/discovery": false,
-      "tbachert/spi": false
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "php-http/discovery": true
     }
   }
 }
