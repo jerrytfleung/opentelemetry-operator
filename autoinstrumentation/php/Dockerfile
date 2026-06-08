@@ -181,8 +181,7 @@ COPY --from=build-zts-musl-84 /build /autoinstrumentation/20240924
 COPY --from=build-non-zts-musl-85 /build /autoinstrumentation/20250925
 COPY --from=build-zts-musl-85 /build /autoinstrumentation/20250925
 
-RUN echo "extension=/otel-auto-instrumentation-php/opentelemetry.so\n" > /autoinstrumentation/opentelemetry.ini
-RUN echo "auto_prepend_file=/otel-auto-instrumentation-php/vendor/autoload.php\n" > /autoinstrumentation/opentelemetry.ini
-RUN echo $version > /autoinstrumentation/version.txt
+COPY opentelemetry.ini /autoinstrumentation/opentelemetry.ini
+COPY version.txt /autoinstrumentation/version.txt
 
 RUN chmod -R go+r /autoinstrumentation
