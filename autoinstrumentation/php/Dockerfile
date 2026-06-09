@@ -42,8 +42,9 @@ FROM php:8.4 AS build-non-zts-84
 ARG version
 WORKDIR /build
 WORKDIR /build/glibc/non-zts
-RUN pecl install opentelemetry-$version
+RUN pecl install opentelemetry-$version protobuf
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
+RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/protobuf.so .
 COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
 RUN apt update && apt install -y git libzip-dev zip && docker-php-ext-install zip
 WORKDIR /app
