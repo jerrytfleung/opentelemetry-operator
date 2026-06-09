@@ -50,7 +50,7 @@ WORKDIR /app
 COPY composer.json .
 RUN composer install --ignore-platform-reqs
 RUN sed -i "s/__DIR__/\'\/otel-auto-instrumentation-php\'/g" /app/vendor/autoload.php
-RUN sed -i "s/__DIR__/\'\/otel-auto-instrumentation-php\'/g" /app/vendor/composer/autoload_real.php
+RUN sed -i "s/__DIR__/\'\/otel-auto-instrumentation-php\/composer\'/g" /app/vendor/composer/autoload_real.php
 #FROM php:8.4-zts AS build-zts-84
 #ARG version
 #WORKDIR /build/glibc/zts
