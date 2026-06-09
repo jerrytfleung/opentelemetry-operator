@@ -42,5 +42,4 @@ standard_c_lib=$(cat /otel-auto-instrumentation-php-clone/standard_c_lib.txt)
 echo "Agent standard_c_lib: $standard_c_lib"
 
 cp -rf "$instrumentation_src"/"$api"/"$standard_c_lib"/"$thread_safety"/* "$mounted_dir"/
-cp -rf "$instrumentation_src"/"$api"/* "$mounted_dir"/
-cp -rf "$instrumentation_src"/opentelemetry.ini "$mounted_dir"/
+cp -rf "$instrumentation_src"/* "$mounted_dir"/

@@ -1,14 +1,11 @@
 ARG version=1.2.1
 
 FROM composer:2 AS composer_build
+COPY composer.json ./
+RUN composer install --ignore-platform-reqs
 
 FROM php:8.1 AS build-non-zts-81
 ARG version
-WORKDIR /build
-COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
-COPY composer.json ./composer.json
-RUN apt-get update && apt-get install -y unzip
-RUN composer install --ignore-platform-req=ext-opentelemetry
 WORKDIR /build/glibc/non-zts
 RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
@@ -21,11 +18,6 @@ RUN cp /usr/local/lib/php/extensions/no-debug-zts-*/opentelemetry.so .
 
 FROM php:8.2 AS build-non-zts-82
 ARG version
-WORKDIR /build
-COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
-COPY composer.json ./composer.json
-RUN apt-get update && apt-get install -y unzip
-RUN composer install --ignore-platform-req=ext-opentelemetry
 WORKDIR /build/glibc/non-zts
 RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
@@ -38,11 +30,6 @@ RUN cp /usr/local/lib/php/extensions/no-debug-zts-*/opentelemetry.so .
 
 FROM php:8.3 AS build-non-zts-83
 ARG version
-WORKDIR /build
-COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
-COPY composer.json ./composer.json
-RUN apt-get update && apt-get install -y unzip
-RUN composer install --ignore-platform-req=ext-opentelemetry
 WORKDIR /build/glibc/non-zts
 RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
@@ -56,10 +43,6 @@ RUN cp /usr/local/lib/php/extensions/no-debug-zts-*/opentelemetry.so .
 FROM php:8.4 AS build-non-zts-84
 ARG version
 WORKDIR /build
-COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
-COPY composer.json ./composer.json
-RUN apt-get update && apt-get install -y unzip
-RUN composer install --ignore-platform-req=ext-opentelemetry
 WORKDIR /build/glibc/non-zts
 RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
@@ -72,11 +55,6 @@ RUN cp /usr/local/lib/php/extensions/no-debug-zts-*/opentelemetry.so .
 
 FROM php:8.5 AS build-non-zts-85
 ARG version
-WORKDIR /build
-COPY --from=composer_build /usr/bin/composer /usr/local/bin/composer
-COPY composer.json ./composer.json
-RUN apt-get update && apt-get install -y unzip
-RUN composer install --ignore-platform-req=ext-opentelemetry
 WORKDIR /build/glibc/non-zts
 RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-non-zts-*/opentelemetry.so .
@@ -159,7 +137,7 @@ RUN cp /usr/local/lib/php/extensions/no-debug-zts-*/opentelemetry.so .
 
 
 FROM busybox
-ARG version
+
 COPY --from=build-non-zts-81 /build /autoinstrumentation/20210902
 COPY --from=build-zts-81 /build /autoinstrumentation/20210902
 COPY --from=build-non-zts-82 /build /autoinstrumentation/20220829
@@ -181,6 +159,7 @@ COPY --from=build-zts-musl-84 /build /autoinstrumentation/20240924
 COPY --from=build-non-zts-musl-85 /build /autoinstrumentation/20250925
 COPY --from=build-zts-musl-85 /build /autoinstrumentation/20250925
 
+COPY --from=composer_build /app/vendor /autoinstrumentation
 COPY opentelemetry.ini /autoinstrumentation/opentelemetry.ini
 COPY version.txt /autoinstrumentation/version.txt
 
