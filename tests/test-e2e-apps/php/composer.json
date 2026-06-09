@@ -2,15 +2,6 @@
   "name": "test-e2e-apps/php",
   "require": {
     "slim/slim": "^4",
-    "slim/psr7": "^1",
-    "open-telemetry/sdk": "^1.14.0",
-    "open-telemetry/opentelemetry-auto-slim": "^1.4.0",
-    "open-telemetry/exporter-otlp": "^1.4"
-  },
-  "config": {
-    "allow-plugins": {
-      "php-http/discovery": false,
-      "tbachert/spi": false
-    }
+    "slim/psr7": "^1"
   }
 }
