@@ -21,6 +21,6 @@ spec:
         outputs:
           - name: podName
             value: ($stdout)
-    - scripts:
+    - script:
         content:
           kubectl logs -n ${NAMESPACE} ($podName)
