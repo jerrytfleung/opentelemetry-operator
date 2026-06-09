@@ -1,7 +1,7 @@
 {
   "name": "open-telemetry/operator-autoinstrumentation-php",
   "description": "OpenTelemetry PHP auto-instrumentation packages to include in the image used by OpenTelemetry Operator for Kubernetes",
-  "type": "library",
+  "type": "project",
   "require": {
     "open-telemetry/exporter-otlp": "^1.4",
     "open-telemetry/opentelemetry-auto-guzzle": "^1.3",
@@ -26,7 +26,8 @@
     "sort-packages": true,
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true,
-      "php-http/discovery": true
+      "php-http/discovery": true,
+      "tbachert/spi": true
     }
   }
 }
