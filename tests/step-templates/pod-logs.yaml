@@ -1,0 +1,26 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: pod-logs
+spec:
+  try:
+    - command:
+        entrypoint: kubectl
+        env:
+          - name: POD_LABEL_SELECTOR
+            value: ($podLabelSelector)
+        args:
+          - get
+          - pod
+          - -n
+          - ${NAMESPACE}
+          - -l
+          - ${POD_LABEL_SELECTOR}
+          - -o
+          - jsonpath={.items[0].metadata.name}
+        outputs:
+          - name: podName
+            value: ($stdout)
+    - scripts:
+        content:
+          kubectl logs -n ${NAMESPACE} ($podName)

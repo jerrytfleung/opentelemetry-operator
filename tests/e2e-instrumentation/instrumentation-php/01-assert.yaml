@@ -22,11 +22,11 @@ spec:
     - name: OTEL_LOG_LEVEL
       value: debug
     - name: OTEL_TRACES_EXPORTER
-      value: console
+      value: otlp
     - name: OTEL_METRICS_EXPORTER
-      value: console
+      value: otlp
     - name: OTEL_LOGS_EXPORTER
-      value: console
+      value: otlp
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
       value: http://deployment-collector:4318
     - name: OTEL_EXPORTER_OTLP_TIMEOUT
