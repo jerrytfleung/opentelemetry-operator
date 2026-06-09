@@ -23,10 +23,10 @@ spec:
       - name: OTEL_LOG_LEVEL
         value: "debug"
       - name: OTEL_TRACES_EXPORTER
-        value: otlp
+        value: console
       - name: OTEL_METRICS_EXPORTER
-        value: none
+        value: console
       - name: OTEL_LOGS_EXPORTER
-        value: none
+        value: console
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://deployment-collector:4318
