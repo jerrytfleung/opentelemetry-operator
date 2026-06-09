@@ -13,4 +13,7 @@ COPY index.php .
 
 RUN composer install
 
+ENV PHP_INI_SCAN_DIR=:/otel-auto-instrumentation-php
+ENV OTEL_PHP_AUTOLOAD_ENABLED=true
+
 CMD ["php", "-S" , "0.0.0.0:8080"]
