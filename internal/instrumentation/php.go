@@ -52,7 +52,7 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 			Name:      phpInitContainerName,
 			Image:     phpSpec.Image,
 			Command:   []string{"/bin/sh", "-c"},
-			Args:      []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath},
+			Args:      []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      cloneVolume.Name,
@@ -73,7 +73,7 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 			Name:      phpCloneContainerName,
 			Image:     container.Image,
 			Command:   []string{"/bin/sh", "-c"},
-			Args:      []string{phpCloneScript},
+			Args:      []string{phpCloneScript, "--", phpCloneMountPath},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      cloneVolume.Name,
