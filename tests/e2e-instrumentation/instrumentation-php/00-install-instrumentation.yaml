@@ -13,8 +13,8 @@ spec:
   exporter:
     endpoint: http://deployment-collector:4317
   propagators:
-    - jaeger
-    - b3
+    - tracecontext
+    - baggage
   sampler:
     type: parentbased_traceidratio
     argument: "0.25"

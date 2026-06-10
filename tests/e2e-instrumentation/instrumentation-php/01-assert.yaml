@@ -52,7 +52,7 @@ spec:
           apiVersion: v1
           fieldPath: spec.nodeName
     - name: OTEL_PROPAGATORS
-      value: jaeger,b3
+      value: tracecontext,baggage
     - name: OTEL_RESOURCE_ATTRIBUTES
       value:
         ( contains(@, 'k8s.container.name=myapp') ): true
