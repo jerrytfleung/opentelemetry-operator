@@ -1511,7 +1511,7 @@ func TestMutatePod(t *testing.T) {
 						{
 							Name:    phpInitContainerName,
 							Image:   "otel/php:1",
-							Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
+							Command: []string{"/bin/sh", "-c"},
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      phpVolumeName,
 								MountPath: phpInstrMountPath,

@@ -265,7 +265,6 @@ func (pm *instPodMutator) Mutate(ctx context.Context, ns corev1.Namespace, pod c
 	}
 	if pm.config.EnablePhpAutoInstrumentation || inst == nil {
 		insts.Php.Instrumentation = inst
-		insts.Php.AdditionalAnnotations = map[string]string{annotationPhpPlatform: annotationValue(ns.ObjectMeta, pod.ObjectMeta, annotationPhpPlatform)}
 	} else {
 		logger.Error(nil, "support for PHP auto instrumentation is not enabled")
 		pm.Recorder.Eventf(pod.DeepCopy(), nil, "Warning", "InstrumentationRequestRejected", "InstrumentationRequestRejected", "support for PHP auto instrumentation is not enabled")
