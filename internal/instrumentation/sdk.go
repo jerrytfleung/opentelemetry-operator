@@ -130,7 +130,6 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 	otelinst := *inst.Instrumentation
 	i.logger.V(1).Info("injecting PHP instrumentation into pod", "otelinst-namespace", otelinst.Namespace, "otelinst-name", otelinst.Name)
 
-	platform := inst.AdditionalAnnotations[annotationPhpPlatform]
 	containers := containersToInstrument(&inst, &pod)
 
 	if len(containers) > 0 {
@@ -139,7 +138,7 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 				i.logger.Info("Skipping PHP injection", "reason", errors.New("is init container"), "container", container.Name)
 				continue
 			}
-			if err := injectPhpSDKToContainer(otelinst.Spec.Php, container, platform); err != nil {
+			if err := injectPhpSDKToContainer(otelinst.Spec.Php, container); err != nil {
 				i.logger.Info("Skipping PHP SDK injection", "reason", err.Error(), "container", container.Name)
 			} else {
 				i.injectCommonEnvVar(otelinst, container)

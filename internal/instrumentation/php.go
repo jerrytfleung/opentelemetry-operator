@@ -28,7 +28,7 @@ const (
 	phpCloneVolumeName    = volumeName + "-clone-php"
 )
 
-func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, platform string) error {
+func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container) error {
 	err := validateContainerEnv(container.Env, phpIniScanDirEnvVarName, otelPhpAutoloadEnabledrEnvVarName)
 	if err != nil {
 		return err
@@ -95,12 +95,12 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 
 // injectPhpSDK injects PHP instrumentation into the specified containers.
 // Containers must point into the provided pod and be ordered with init containers first.
-func injectPhpSDK(phpSpec v1alpha1.Php, pod *corev1.Pod, containers []*corev1.Container, platform string, instSpec v1alpha1.InstrumentationSpec) error {
+func injectPhpSDK(phpSpec v1alpha1.Php, pod *corev1.Pod, containers []*corev1.Container, instSpec v1alpha1.InstrumentationSpec) error {
 	for _, container := range containers {
 		if isInitContainer(container.Name, pod) {
 			continue
 		}
-		if err := injectPhpSDKToContainer(phpSpec, container, platform); err != nil {
+		if err := injectPhpSDKToContainer(phpSpec, container); err != nil {
 			return err
 		}
 		*pod = injectPhpSDKToPod(phpSpec, *pod, containers[0].Name, container, instSpec)

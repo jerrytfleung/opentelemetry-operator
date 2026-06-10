@@ -311,15 +311,6 @@ spec:
         value: /home/node/app/node_modules
 ```
 
-PHP:
-PHP auto-instrumentation also honors an annotation that will permit it to run it on images with a different C library than glibc.
-
-```bash
-instrumentation.opentelemetry.io/inject-php: "true"
-instrumentation.opentelemetry.io/otel-php-platform: "glibc" # for Linux glibc based images, this is the default value and can be omitted
-instrumentation.opentelemetry.io/otel-php-platform: "musl" # for Linux musl based images
-```
-
 Python:
 Python auto-instrumentation also honors an annotation that will permit it to run it on images with a different C library than glibc.
 
