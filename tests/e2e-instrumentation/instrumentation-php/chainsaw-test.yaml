@@ -23,7 +23,7 @@ spec:
       value: "5"
     - name: searchStrings
       value: |
-        http.response.status_code
+        http.request.method
     - name: catchPodLabelSelector
       value: app.kubernetes.io/name=deployment-collector
     - name: catchContainer
