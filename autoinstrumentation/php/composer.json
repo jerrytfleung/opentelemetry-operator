@@ -11,7 +11,7 @@
     "open-telemetry/opentelemetry-auto-psr18": "^1.2",
     "open-telemetry/opentelemetry-auto-slim": "^1.4",
     "open-telemetry/sdk": "^1.14",
-    "php-http/guzzle7-adapter": "^1.1"
+    "guzzlehttp/guzzle": "^7"
   },
   "provide": {
     "psr/http-client": "*",
