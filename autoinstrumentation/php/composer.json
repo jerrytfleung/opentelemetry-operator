@@ -11,23 +11,16 @@
     "open-telemetry/opentelemetry-auto-psr18": "^1.2",
     "open-telemetry/opentelemetry-auto-slim": "^1.4",
     "open-telemetry/sdk": "^1.14",
-    "guzzlehttp/guzzle": "^7"
+    "php-http/guzzle7-adapter": "^1.1"
   },
   "provide": {
-    "psr/http-client": "*",
-    "psr/http-server-middleware": "*",
     "laravel/framework": "*",
-    "slim/slim": "*",
-    "symfony/http-client-contracts": "*",
-    "symfony/http-kernel": "*"
+    "slim/slim": "*"
   },
   "config": {
-    "process-timeout": 0,
-    "sort-packages": true,
     "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true,
-      "php-http/discovery": true,
-      "tbachert/spi": true
+      "php-http/discovery": false,
+      "tbachert/spi": false
     }
   }
 }
