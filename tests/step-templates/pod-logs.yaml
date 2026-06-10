@@ -26,7 +26,7 @@ spec:
           - name: podName
             value: ($podName)
         content:
-          kubectl logs ${podName}
+          kubectl logs ${podName} -n $NAMESPACE --all-containers=true
   finally:
     # Collects pod logs automatically if the script relies on a deployed resource
     - podLogs: { }
