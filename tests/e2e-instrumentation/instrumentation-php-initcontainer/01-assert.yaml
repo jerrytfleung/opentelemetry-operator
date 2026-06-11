@@ -5,6 +5,14 @@ metadata:
     app: my-php-initcontainer
 spec:
   initContainers:
+  # The instrumentation init container must come FIRST (before the target init container)
+  - name: opentelemetry-auto-instrumentation-php
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
   # The target init container should have the PHP agent env vars and volume mounts
   - name: php-init
     env:
