@@ -5,20 +5,6 @@ metadata:
     app: my-php-initcontainer
 spec:
   initContainers:
-  - name: opentelemetry-auto-instrumentation-clone-php
-    securityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: [ "ALL" ]
-      seccompProfile:
-        type: RuntimeDefault
-  - name: opentelemetry-auto-instrumentation-php
-    securityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: [ "ALL" ]
-      seccompProfile:
-        type: RuntimeDefault
   # The target init container should have the PHP agent env vars and volume mounts
   - name: php-init
     env:
@@ -76,10 +62,6 @@ spec:
   - name: myapp
 status:
   initContainerStatuses:
-  - name: opentelemetry-auto-instrumentation-clone-php
-    ready: true
-  - name: opentelemetry-auto-instrumentation-php
-    ready: true
   - name: php-init
     ready: true
   (containerStatuses[?name == 'myapp']):
