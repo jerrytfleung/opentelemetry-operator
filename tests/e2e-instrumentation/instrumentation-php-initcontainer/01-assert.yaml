@@ -7,7 +7,19 @@ spec:
   initContainers:
   # The instrumentation init container must come FIRST (before the target init container)
   - name: opentelemetry-auto-instrumentation-clone-php
+    volumeMounts:
+    - mountPath: /otel-auto-instrumentation-php-clone
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      readOnly: true
   - name: opentelemetry-auto-instrumentation-php
+    volumeMounts:
+    - mountPath: /otel-auto-instrumentation-php-clone
+      readOnly: true
+    - mountPath: /otel-auto-instrumentation-php
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      readOnly: true
   # The target init container should have the PHP agent env vars and volume mounts
   - name: php-init
     env:
