@@ -6,13 +6,8 @@ metadata:
 spec:
   initContainers:
   # The instrumentation init container must come FIRST (before the target init container)
+  - name: opentelemetry-auto-instrumentation-clone-php
   - name: opentelemetry-auto-instrumentation-php
-    securityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: ["ALL"]
-      seccompProfile:
-        type: RuntimeDefault
   # The target init container should have the PHP agent env vars and volume mounts
   - name: php-init
     env:
@@ -61,21 +56,28 @@ spec:
     - name: OTEL_PROPAGATORS
       value: tracecontext,baggage
     - name: OTEL_RESOURCE_ATTRIBUTES
+      value:
+        ( contains(@, 'k8s.container.name=php-init') ): true
+        ( contains(@, 'k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME)') ): true
+        ( contains(@, 'k8s.replicaset.name=my-php-initcontainer-') ): true
+        ( contains(@, 'k8s.deployment.name=my-php-initcontainer') ): true
+        ( contains(@, concat('k8s.namespace.name=', $namespace)) ): true
+        ( contains(@, 'k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME)') ): true
+        ( contains(@, join('', ['service.instance.id=', $namespace, '.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).php-init'])  ) ): true
+        ( contains(@, 'service.version=main') ): true
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       readOnly: true
-    - mountPath: /otel-auto-instrumentation-php
-      name: opentelemetry-auto-instrumentation-php
   containers:
   - name: myapp
 status:
   initContainerStatuses:
+  - name: opentelemetry-auto-instrumentation-clone-php
+    ready: true
+  - name: opentelemetry-auto-instrumentation-php
+    ready: true
   - name: php-init
     ready: true
-  (containerStatuses[?name == 'myapp']):
-  - name: myapp
-    ready: true
-    started: true
   phase: Running
 ---
 apiVersion: apps/v1

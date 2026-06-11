@@ -134,10 +134,6 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 
 	if len(containers) > 0 {
 		for _, container := range containers {
-			//if isInitContainer(container.Name, &pod) {
-			//	i.logger.Info("Skipping PHP injection", "reason", errors.New("is init container"), "container", container.Name)
-			//	continue
-			//}
 			if err := injectPhpSDKToContainer(otelinst.Spec.Php, container); err != nil {
 				i.logger.Info("Skipping PHP SDK injection", "reason", err.Error(), "container", container.Name)
 			} else {
