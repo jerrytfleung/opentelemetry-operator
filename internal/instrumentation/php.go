@@ -37,6 +37,12 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container) 
 	// inject Php instrumentation spec env vars.
 	container.Env = appendIfNotSet(container.Env, phpSpec.Env...)
 
+	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		Name:      volume.Name,
+		MountPath: phpInstrMountPath,
+	})
+
 	return nil
 }
 
@@ -84,10 +90,6 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 
 		pod.Spec.InitContainers = insertInitContainer(&pod, initContainer, phpInitContainerName)
 
-		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-			Name:      volume.Name,
-			MountPath: phpInstrMountPath,
-		})
 	}
 
 	return pod

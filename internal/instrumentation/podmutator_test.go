@@ -1310,16 +1310,41 @@ func TestMutatePod(t *testing.T) {
 								},
 							},
 						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:    phpInitContainerName,
-							Image:   "otel/php:1",
-							Command: []string{"cp", "-r", "/autoinstrumentation/.", phpInstrMountPath},
+							Name:    phpCloneVolumeName,
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      phpVolumeName,
-								MountPath: phpInstrMountPath,
+								Name:      phpCloneVolumeName,
+								MountPath: phpCloneMountPath,
 							}},
+						},
+						{
+							Name:    phpVolumeName,
+							Image:   "otel/php:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpCloneVolumeName,
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
 						},
 					},
 					Containers: []corev1.Container{
@@ -1506,16 +1531,41 @@ func TestMutatePod(t *testing.T) {
 								},
 							},
 						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:    phpInitContainerName,
+							Name:    phpCloneVolumeName,
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      phpCloneVolumeName,
+								MountPath: phpCloneMountPath,
+							}},
+						},
+						{
+							Name:    phpVolumeName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      phpVolumeName,
-								MountPath: phpInstrMountPath,
-							}},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpCloneVolumeName,
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
 						},
 					},
 					Containers: []corev1.Container{
