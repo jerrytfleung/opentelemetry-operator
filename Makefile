@@ -426,7 +426,7 @@ e2e-instrumentation-default: e2e-instrumentation
 # instrumentation end-to-tests
 .PHONY: e2e-instrumentation
 e2e-instrumentation: chainsaw
-	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation/instrumentation-php --report-name e2e-instrumentation
+	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation --report-name e2e-instrumentation
 
 # no-crds end-to-tests
 .PHONY: e2e-no-crds
