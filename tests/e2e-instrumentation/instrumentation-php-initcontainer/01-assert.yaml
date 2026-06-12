@@ -10,13 +10,11 @@ spec:
     volumeMounts:
     - mountPath: /otel-auto-instrumentation-php-clone-php-init
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      readOnly: true
   - name: opentelemetry-auto-instrumentation-php
     volumeMounts:
     - mountPath: /otel-auto-instrumentation-php-clone-php-init
     - mountPath: /otel-auto-instrumentation-php
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      readOnly: true
   # The target init container should have the PHP agent env vars and volume mounts
   - name: php-init
     env:
@@ -74,7 +72,7 @@ spec:
         ( contains(@, 'service.version=main') ): true
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      readOnly: true
+    - mountPath: /otel-auto-instrumentation-php
   containers:
   - name: myapp
 status:
