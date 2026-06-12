@@ -141,9 +141,10 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 				i.injectDefaultPhpEnvVars(container)
 				pod = i.injectCommonSDKConfig(ctx, otelinst, ns, pod, container, container)
 			}
-			pod = injectPhpSDKToPod(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
-			pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpInitContainerName)
+			pod = injectPhpSDKToPodByContainer(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
 		}
+		pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpInitContainerName)
+		pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpCloneContainerName)
 	}
 
 	return pod

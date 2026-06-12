@@ -421,12 +421,13 @@ e2e-autoscale: chainsaw
 # instrumentation end-to-tests, alias to make matrix tests more convenient
 # the tests are the same, but the setup is different
 .PHONY: e2e-instrumentation-default
-e2e-instrumentation-default: e2e-instrumentation
+e2e-instrumentation-default: chainsaw
+	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation/instrumentation-php-initcontainer --report-name e2e-instrumentation-default
 
 # instrumentation end-to-tests
 .PHONY: e2e-instrumentation
 e2e-instrumentation: chainsaw
-	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation --report-name e2e-instrumentation
+	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation/instrumentation-php-multicontainer --report-name e2e-instrumentation
 
 # no-crds end-to-tests
 .PHONY: e2e-no-crds

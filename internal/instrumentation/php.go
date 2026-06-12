@@ -24,8 +24,8 @@ const (
 
 	phpInitContainerName  = initContainerName + "-php"
 	phpVolumeName         = volumeName + "-php"
-	phpCloneContainerName = initContainerName + "-clone-php"
-	phpCloneVolumeName    = volumeName + "-clone-php"
+	phpCloneContainerName = initContainerName + "-clone-"
+	phpCloneVolumeName    = volumeName + "-clone-"
 )
 
 func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container) error {
@@ -46,9 +46,9 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container) 
 	return nil
 }
 
-func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, container *corev1.Container, instSpec v1alpha1.InstrumentationSpec) corev1.Pod {
+func injectPhpSDKToPodByContainer(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, container *corev1.Container, instSpec v1alpha1.InstrumentationSpec) corev1.Pod {
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
-	cloneVolume := instrVolume(phpSpec.VolumeClaimTemplate, phpCloneVolumeName, phpSpec.VolumeSizeLimit)
+	cloneVolume := instrVolume(phpSpec.VolumeClaimTemplate, phpCloneVolumeName+container.Name, phpSpec.VolumeSizeLimit)
 	// init container
 	if isInitContainerMissing(pod, phpInitContainerName) {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
@@ -58,11 +58,11 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 			Name:      phpInitContainerName,
 			Image:     phpSpec.Image,
 			Command:   []string{"/bin/sh", "-c"},
-			Args:      []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+			Args:      []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath + container.Name, phpInstrMountPath},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      cloneVolume.Name,
-				MountPath: phpCloneMountPath,
+				MountPath: phpCloneMountPath + container.Name,
 			}, {
 				Name:      volume.Name,
 				MountPath: phpInstrMountPath,
@@ -74,21 +74,21 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 	}
 
 	// PHP clone container; insert before init container
-	if isInitContainerMissing(pod, phpCloneContainerName) {
-		initContainer := corev1.Container{
-			Name:      phpCloneContainerName,
+	if isInitContainerMissing(pod, phpCloneContainerName+container.Name) {
+		cloneContainer := corev1.Container{
+			Name:      phpCloneContainerName + container.Name,
 			Image:     container.Image,
 			Command:   []string{"/bin/sh", "-c"},
-			Args:      []string{phpCloneScript, "--", phpCloneMountPath},
+			Args:      []string{phpCloneScript, "--", phpCloneMountPath + container.Name},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      cloneVolume.Name,
-				MountPath: phpCloneMountPath,
+				MountPath: phpCloneMountPath + container.Name,
 			}},
 			ImagePullPolicy: instSpec.ImagePullPolicy,
 		}
 
-		pod.Spec.InitContainers = insertInitContainer(&pod, initContainer, phpInitContainerName)
+		pod.Spec.InitContainers = insertInitContainer(&pod, cloneContainer, phpInitContainerName)
 
 	}
 
@@ -105,7 +105,7 @@ func injectPhpSDK(phpSpec v1alpha1.Php, pod *corev1.Pod, containers []*corev1.Co
 		if err := injectPhpSDKToContainer(phpSpec, container); err != nil {
 			return err
 		}
-		*pod = injectPhpSDKToPod(phpSpec, *pod, containers[0].Name, container, instSpec)
+		*pod = injectPhpSDKToPodByContainer(phpSpec, *pod, containers[0].Name, container, instSpec)
 	}
 	return nil
 }
