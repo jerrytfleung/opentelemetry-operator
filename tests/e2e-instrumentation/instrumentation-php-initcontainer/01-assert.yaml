@@ -6,14 +6,14 @@ metadata:
 spec:
   initContainers:
   # The instrumentation init container must come FIRST (before the target init container)
-  - name: opentelemetry-auto-instrumentation-clone-php
+  - name: opentelemetry-auto-instrumentation-clone-php-init
     volumeMounts:
-    - mountPath: /otel-auto-instrumentation-php-clone
+    - mountPath: /otel-auto-instrumentation-php-clone-php-init
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       readOnly: true
   - name: opentelemetry-auto-instrumentation-php
     volumeMounts:
-    - mountPath: /otel-auto-instrumentation-php-clone
+    - mountPath: /otel-auto-instrumentation-php-clone-php-init
     - mountPath: /otel-auto-instrumentation-php
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       readOnly: true
@@ -79,7 +79,7 @@ spec:
   - name: myapp
 status:
   initContainerStatuses:
-  - name: opentelemetry-auto-instrumentation-clone-php
+  - name: opentelemetry-auto-instrumentation-clone-php-init
     ready: true
   - name: opentelemetry-auto-instrumentation-php
     ready: true

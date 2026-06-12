@@ -11,7 +11,7 @@ import (
 
 const (
 	phpInstrMountPath = "/otel-auto-instrumentation-php"
-	phpCloneMountPath = "/otel-auto-instrumentation-php-clone"
+	phpCloneMountPath = "/otel-auto-instrumentation-php-clone-"
 
 	// https://www.php.net/manual/en/configuration.file.php//configuration.file.scan
 	phpIniScanDirEnvVarName  = "PHP_INI_SCAN_DIR"
