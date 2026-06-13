@@ -133,16 +133,28 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 	containers := containersToInstrument(&inst, &pod)
 
 	if len(containers) > 0 {
+		// PHP instrumentation supports only single container instrumentation
+		// and it can't be an initContainer
+		injected := false
 		for _, container := range containers {
-			if err := injectPhpSDKToContainer(otelinst.Spec.Php, container); err != nil {
-				i.logger.Info("Skipping PHP SDK injection", "reason", err.Error(), "container", container.Name)
+			if isInitContainer(container.Name, &pod) {
+				i.logger.Info("Skipping PHP SDK injection", "reason", errors.New("is init container"), "container", container.Name)
 			} else {
-				i.injectCommonEnvVar(otelinst, container)
-				i.injectDefaultPhpEnvVars(container)
-				pod = i.injectCommonSDKConfig(ctx, otelinst, ns, pod, container, container)
+				if err := injectPhpSDKToContainer(otelinst.Spec.Php, container); err != nil {
+					i.logger.Info("Skipping PHP SDK injection", "reason", err.Error(), "container", container.Name)
+				} else {
+					i.injectCommonEnvVar(otelinst, container)
+					i.injectDefaultPhpEnvVars(container)
+					pod = i.injectCommonSDKConfig(ctx, otelinst, ns, pod, container, container)
+				}
+				pod = injectPhpSDKToPodByContainer(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
+				injected = true
+				break
 			}
-			pod = injectPhpSDKToPod(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
+		}
+		if injected {
 			pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpInitContainerName)
+			pod = i.setInitContainerSecurityContext(pod, resolveInitContainerSecurityContext(otelinst.Spec.InitContainerSecurityContext, containers[0].SecurityContext), phpCloneContainerName)
 		}
 	}
 

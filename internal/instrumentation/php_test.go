@@ -57,11 +57,12 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:    "opentelemetry-auto-instrumentation-clone-php",
+							Name:    "opentelemetry-auto-instrumentation-clone",
 							Image:   "bar/foo:1",
 							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
+								Name:      "opentelemetry-auto-instrumentation-clone",
 								MountPath: phpInstrMountPath,
 							}},
 						},
@@ -69,6 +70,7 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      "opentelemetry-auto-instrumentation-php",
 								MountPath: phpInstrMountPath,

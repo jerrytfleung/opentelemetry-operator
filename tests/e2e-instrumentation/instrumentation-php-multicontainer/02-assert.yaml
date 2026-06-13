@@ -81,10 +81,10 @@ status:
     ready: true
     started: true
   initContainerStatuses:
-    - name: opentelemetry-auto-instrumentation-clone-php
-      ready: true
-    - name: opentelemetry-auto-instrumentation-php
-      ready: true
+  - name: opentelemetry-auto-instrumentation-clone
+    ready: true
+  - name: opentelemetry-auto-instrumentation-php
+    ready: true
   phase: Running
 ---
 apiVersion: apps/v1
