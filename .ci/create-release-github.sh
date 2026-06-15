@@ -7,6 +7,7 @@ sed -n "/${DESIRED_VERSION}/,/${CURRENT_VERSION}/{/${CURRENT_VERSION}/!p;}" CHAN
 gh config set prompt disabled
 gh release create \
     -t "Release v${DESIRED_VERSION}" \
+    --notes-file ${NOTES_FILE} \
     --draft \
     "v${DESIRED_VERSION}" \
     'dist/opentelemetry-operator.yaml#Installation manifest for Kubernetes' \
