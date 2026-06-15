@@ -12,12 +12,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-operator/apis/v1beta1"
-	"github.com/open-telemetry/opentelemetry-operator/internal/autodetect/certmanager"
 	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/collector"
 	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/manifestutils"
 	"github.com/open-telemetry/opentelemetry-operator/internal/manifests/targetallocator/adapters"
 	"github.com/open-telemetry/opentelemetry-operator/internal/naming"
-	"github.com/open-telemetry/opentelemetry-operator/internal/otelconfig"
 	"github.com/open-telemetry/opentelemetry-operator/pkg/constants"
 	"github.com/open-telemetry/opentelemetry-operator/pkg/featuregate"
 )
@@ -136,7 +134,7 @@ func ConfigMap(params Params) (*corev1.ConfigMap, error) {
 		taConfig["prometheus_cr"] = prometheusCRConfig
 	}
 
-	if params.Config.CertManagerAvailability == certmanager.Available && featuregate.EnableTargetAllocatorMTLS.IsEnabled() {
+	if manifestutils.IsTAMTLSEnabled(&params.TargetAllocator) {
 		taConfig["https"] = map[string]any{
 			"enabled":            true,
 			"listen_addr":        ":8443",
@@ -193,7 +191,7 @@ func getScrapeConfigs(taScrapeConfigs []v1beta1.AnyConfig, collectorConfig v1bet
 		scrapeConfigs = append(scrapeConfigs, taScrapeConfigs...)
 	}
 
-	configStr, err := otelconfig.Yaml(&collectorConfig)
+	configStr, err := collectorConfig.Yaml()
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +225,13 @@ func getGlobalConfigFromOtelConfig(otelConfig v1beta1.Config) (v1beta1.AnyConfig
 func getScrapeConfigsFromOtelConfig(otelcolConfig string) ([]v1beta1.AnyConfig, error) {
 	// Collector supports environment variable substitution, but the TA does not.
 	// TA Scrape Configs should have a single "$", as it does not support env var substitution
+	promConfig, err := adapters.ConfigToPromConfig(otelcolConfig)
+	if err != nil {
+		return nil, err
+	}
+	if _, hasConfig := promConfig["config"]; !hasConfig {
+		return []v1beta1.AnyConfig{}, nil
+	}
 	prometheusReceiverConfig, err := adapters.UnescapeDollarSignsInPromConfig(otelcolConfig)
 	if err != nil {
 		return nil, err

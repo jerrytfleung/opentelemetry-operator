@@ -136,7 +136,7 @@ RUN pecl install opentelemetry-$version
 RUN cp /usr/local/lib/php/extensions/no-debug-zts-*/opentelemetry.so .
 
 
-FROM busybox
+FROM busybox@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
 
 COPY --from=build-non-zts-81 /build /autoinstrumentation/20210902
 COPY --from=build-zts-81 /build /autoinstrumentation/20210902

@@ -30,10 +30,10 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	kubeTesting "k8s.io/client-go/testing"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/open-telemetry/opentelemetry-operator/apis/v1beta1"
+	"github.com/open-telemetry/opentelemetry-operator/internal/autodetect/certmanager"
 	autoRBAC "github.com/open-telemetry/opentelemetry-operator/internal/autodetect/rbac"
 	"github.com/open-telemetry/opentelemetry-operator/internal/config"
 	"github.com/open-telemetry/opentelemetry-operator/internal/manifests"
@@ -167,7 +167,7 @@ func TestCollectorDefaultingWebhook(t *testing.T) {
 					Mode:            v1beta1.ModeDeployment,
 					UpgradeStrategy: v1beta1.UpgradeStrategyAutomatic,
 					Config: func() v1beta1.Config {
-						const input = `{"receivers":{"otlp":{"protocols":{"grpc":{"endpoint":"0.0.0.0:4317"},"http":{"endpoint":"0.0.0.0:4318"}}}},"exporters":{"debug":null},"service":{"telemetry":{"metrics":{"readers":[{"pull":{"exporter":{"prometheus":{"host":"0.0.0.0","port":8888,"without_scope_info":false,"without_type_suffix":false,"without_units":false}}}}]}},"pipelines":{"traces":{"receivers":["otlp"],"exporters":["debug"]}}}}`
+						const input = `{"receivers":{"otlp":{"protocols":{"grpc":{"endpoint":"0.0.0.0:4317"},"http":{"endpoint":"0.0.0.0:4318"}}}},"exporters":{"debug":null},"service":{"telemetry":{"metrics":{"readers":[{"pull":{"exporter":{"prometheus":{"host":"0.0.0.0","port":8888}}}}]}},"pipelines":{"traces":{"receivers":["otlp"],"exporters":["debug"]}}}}`
 						var cfg v1beta1.Config
 						require.NoError(t, go_yaml.Unmarshal([]byte(input), &cfg))
 						// This is a workaround to avoid the type mismatch because how go-yaml unmarshals
@@ -668,6 +668,20 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 						Enabled: true,
 					},
 					Config: cfg,
+				},
+			},
+		},
+		{
+			name: "valid spec with command override",
+			otelcol: v1beta1.OpenTelemetryCollector{
+				Spec: v1beta1.OpenTelemetryCollectorSpec{
+					Mode: v1beta1.ModeDeployment,
+					OpenTelemetryCommonFields: v1beta1.OpenTelemetryCommonFields{
+						Replicas: &one,
+					},
+					UpgradeStrategy: "adhoc",
+					Command:         []string{"/usr/share/agent", "otel"},
+					Config:          cfg,
 				},
 			},
 		},
@@ -1448,6 +1462,107 @@ func TestOTELColValidatingWebhook(t *testing.T) {
 	}
 }
 
+func TestCollectorMTLSValidation(t *testing.T) {
+	cfg := v1beta1.Config{}
+	err := go_yaml.Unmarshal([]byte(cfgYaml), &cfg)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name                 string
+		otelcol              v1beta1.OpenTelemetryCollector
+		certManagerAvailable bool
+		expectedErr          string
+	}{
+		{
+			name: "mTLS with useCertManager true and cert-manager not available",
+			otelcol: v1beta1.OpenTelemetryCollector{
+				Spec: v1beta1.OpenTelemetryCollectorSpec{
+					Mode: v1beta1.ModeStatefulSet,
+					TargetAllocator: v1beta1.TargetAllocatorEmbedded{
+						Enabled: true,
+						Mtls:    &v1beta1.TargetAllocatorMTLS{Enabled: true, UseCertManager: new(true)},
+					},
+					Config: cfg,
+				},
+			},
+			expectedErr: "mTLS is enabled with useCertManager but cert-manager is not available",
+		},
+		{
+			name: "mTLS with useCertManager defaulted and cert-manager not available",
+			otelcol: v1beta1.OpenTelemetryCollector{
+				Spec: v1beta1.OpenTelemetryCollectorSpec{
+					Mode: v1beta1.ModeStatefulSet,
+					TargetAllocator: v1beta1.TargetAllocatorEmbedded{
+						Enabled: true,
+						Mtls:    &v1beta1.TargetAllocatorMTLS{Enabled: true},
+					},
+					Config: cfg,
+				},
+			},
+			expectedErr: "mTLS is enabled with useCertManager but cert-manager is not available",
+		},
+		{
+			name: "mTLS with useCertManager false and cert-manager not available",
+			otelcol: v1beta1.OpenTelemetryCollector{
+				Spec: v1beta1.OpenTelemetryCollectorSpec{
+					Mode: v1beta1.ModeStatefulSet,
+					TargetAllocator: v1beta1.TargetAllocatorEmbedded{
+						Enabled: true,
+						Mtls:    &v1beta1.TargetAllocatorMTLS{Enabled: true, UseCertManager: new(false)},
+					},
+					Config: cfg,
+				},
+			},
+		},
+		{
+			name: "mTLS with useCertManager true and cert-manager available",
+			otelcol: v1beta1.OpenTelemetryCollector{
+				Spec: v1beta1.OpenTelemetryCollectorSpec{
+					Mode: v1beta1.ModeStatefulSet,
+					TargetAllocator: v1beta1.TargetAllocatorEmbedded{
+						Enabled:      true,
+						Mtls:         &v1beta1.TargetAllocatorMTLS{Enabled: true, UseCertManager: new(true)},
+						PrometheusCR: v1beta1.TargetAllocatorPrometheusCR{Enabled: true},
+					},
+					Config: cfg,
+				},
+			},
+			certManagerAvailable: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmAvailability := certmanager.NotAvailable
+			if test.certManagerAvailable {
+				cmAvailability = certmanager.Available
+			}
+			cfg := config.Config{
+				CollectorImage:          "default-collector",
+				TargetAllocatorImage:    "default-ta-allocator",
+				CertManagerAvailability: cmAvailability,
+			}
+			cvw := webhook.NewCollectorWebhook(
+				logr.Discard(),
+				testScheme,
+				cfg,
+				getReviewer(false),
+				nil,
+				nil,
+				nil,
+				nil,
+			)
+			ctx := context.Background()
+			_, err := cvw.Validate(ctx, &test.otelcol)
+			if test.expectedErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, test.expectedErr)
+			}
+		})
+	}
+}
+
 func TestOTELColValidateUpdateWebhook(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -1569,12 +1684,12 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					InitialDelaySeconds:           ptr.To(int32(0)),
-					TimeoutSeconds:                ptr.To(int32(1)),
-					PeriodSeconds:                 ptr.To(int32(1)),
-					SuccessThreshold:              ptr.To(int32(1)),
-					FailureThreshold:              ptr.To(int32(1)),
-					TerminationGracePeriodSeconds: ptr.To(int64(1)),
+					InitialDelaySeconds:           new(int32(0)),
+					TimeoutSeconds:                new(int32(1)),
+					PeriodSeconds:                 new(int32(1)),
+					SuccessThreshold:              new(int32(1)),
+					FailureThreshold:              new(int32(1)),
+					TerminationGracePeriodSeconds: new(int64(1)),
 				}
 				return c
 			},
@@ -1584,7 +1699,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					InitialDelaySeconds: ptr.To(int32(-1)),
+					InitialDelaySeconds: new(int32(-1)),
 				}
 				return c
 			},
@@ -1595,7 +1710,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					TimeoutSeconds: ptr.To(int32(0)),
+					TimeoutSeconds: new(int32(0)),
 				}
 				return c
 			},
@@ -1606,7 +1721,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					PeriodSeconds: ptr.To(int32(0)),
+					PeriodSeconds: new(int32(0)),
 				}
 				return c
 			},
@@ -1617,7 +1732,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					SuccessThreshold: ptr.To(int32(0)),
+					SuccessThreshold: new(int32(0)),
 				}
 				return c
 			},
@@ -1628,7 +1743,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					FailureThreshold: ptr.To(int32(0)),
+					FailureThreshold: new(int32(0)),
 				}
 				return c
 			},
@@ -1639,7 +1754,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.LivenessProbe = &v1beta1.Probe{
-					TerminationGracePeriodSeconds: ptr.To(int64(0)),
+					TerminationGracePeriodSeconds: new(int64(0)),
 				}
 				return c
 			},
@@ -1650,10 +1765,10 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.Autoscaler = &v1beta1.AutoscalerSpec{
-					MinReplicas:             ptr.To(int32(1)),
-					MaxReplicas:             ptr.To(int32(3)),
-					TargetCPUUtilization:    ptr.To(int32(80)),
-					TargetMemoryUtilization: ptr.To(int32(75)),
+					MinReplicas:             new(int32(1)),
+					MaxReplicas:             new(int32(3)),
+					TargetCPUUtilization:    new(int32(80)),
+					TargetMemoryUtilization: new(int32(75)),
 				}
 				return c
 			},
@@ -1663,7 +1778,7 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.Autoscaler = &v1beta1.AutoscalerSpec{
-					MaxReplicas: ptr.To(int32(0)),
+					MaxReplicas: new(int32(0)),
 				}
 				return c
 			},
@@ -1674,8 +1789,8 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.Autoscaler = &v1beta1.AutoscalerSpec{
-					MinReplicas: ptr.To(int32(0)),
-					MaxReplicas: ptr.To(int32(1)),
+					MinReplicas: new(int32(0)),
+					MaxReplicas: new(int32(1)),
 				}
 				return c
 			},
@@ -1686,8 +1801,8 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.Autoscaler = &v1beta1.AutoscalerSpec{
-					MaxReplicas:          ptr.To(int32(1)),
-					TargetCPUUtilization: ptr.To(int32(0)),
+					MaxReplicas:          new(int32(1)),
+					TargetCPUUtilization: new(int32(0)),
 				}
 				return c
 			},
@@ -1698,8 +1813,8 @@ func TestValidationViaCRDAnnotations(t *testing.T) {
 			collector: func(namespace string) *v1beta1.OpenTelemetryCollector {
 				c := minimalCollector(namespace)
 				c.Spec.Autoscaler = &v1beta1.AutoscalerSpec{
-					MaxReplicas:             ptr.To(int32(1)),
-					TargetMemoryUtilization: ptr.To(int32(0)),
+					MaxReplicas:             new(int32(1)),
+					TargetMemoryUtilization: new(int32(0)),
 				}
 				return c
 			},

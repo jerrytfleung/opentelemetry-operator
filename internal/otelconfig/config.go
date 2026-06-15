@@ -4,7 +4,6 @@
 package otelconfig
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -13,7 +12,6 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/go-logr/logr"
-	go_yaml "github.com/goccy/go-yaml"
 	otelConfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -372,16 +370,6 @@ func GetStartupProbe(c *v1beta1.Config, logger logr.Logger) (*corev1.Probe, erro
 	return nil, nil
 }
 
-// Yaml encodes the current object and returns it as a string.
-func Yaml(c *v1beta1.Config) (string, error) {
-	var buf bytes.Buffer
-	yamlEncoder := go_yaml.NewEncoder(&buf, go_yaml.IndentSequence(true), go_yaml.AutoInt())
-	if err := yamlEncoder.Encode(&c); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
 // NullObjects returns null objects in the config.
 func NullObjects(c *v1beta1.Config) []string {
 	var nullKeys []string
@@ -508,10 +496,10 @@ func ServiceApplyDefaults(s *v1beta1.Service, logger logr.Logger) ([]v1beta1.Eve
 }
 
 // AddPrometheusMetricsEndpoint creates a MetricReader with a Prometheus pull exporter.
-// without_type_suffix/without_units/without_scope_info are explicitly set to false to
-// preserve the historical metric name shape produced by operator-managed collectors
-// before open-telemetry/opentelemetry-collector#15027. Opt into collector defaults via
-// the operator.collector.usedefaulttelemetryshape feature gate. See issue #5075.
+// By default (operator.collector.usedefaulttelemetryshape beta gate enabled) the
+// reader carries no overrides, so the collector's defaults for without_type_suffix,
+// without_units, and without_scope_info apply. Disabling the gate explicitly sets
+// all three to false to preserve the pre-v0.154.0 metric name shape. See #5075.
 func AddPrometheusMetricsEndpoint(host string, port int32) otelConfig.MetricReader {
 	portInt := int(port)
 	prom := &otelConfig.Prometheus{

@@ -1,6 +1,6 @@
 # The Dockerfile's resulting image is purpose-built for executing OpenTelemetry Operator e2e tests within the OpenShift release (https://github.com/openshift/release) using Prow CI.
 
-FROM docker.io/library/golang:1.26
+FROM docker.io/library/golang:1.26@sha256:87a41d2539e5671777734e91f467499ed5eafb1fb1f77221dff2744db7a51775
 
 # Copy the repository files
 COPY . /tmp/opentelemetry-operator
@@ -47,6 +47,16 @@ RUN curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && ./aws/install
+
+# Install Claude Code CLI via signed apt repository
+RUN install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://downloads.claude.ai/keys/claude-code.asc \
+         -o /etc/apt/keyrings/claude-code.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/claude-code.asc] https://downloads.claude.ai/claude-code/apt/stable stable main" \
+         > /etc/apt/sources.list.d/claude-code.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends claude-code \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /tmp/opentelemetry-operator
