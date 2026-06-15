@@ -424,7 +424,6 @@ Init containers can be instrumented by including their names in the `container-n
 
 Supported instrumentations for init containers:
 - Java
-- PHP
 - Python
 - Node.js
 - .NET
@@ -432,6 +431,7 @@ Supported instrumentations for init containers:
 
 **Not supported** for init containers:
 - Go (does not support multicontainer pods)
+- PHP (does not support multicontainer pods)
 - Apache HTTPD
 - Nginx
 
@@ -488,7 +488,7 @@ instrumentation.opentelemetry.io/nodejs-container-names: "nodejs1,nodejs2"
 PHP:
 
 ```bash
-instrumentation.opentelemetry.io/php-container-names: "php1,php2"
+instrumentation.opentelemetry.io/php-container-names: "php1"
 ```
 
 Python:
