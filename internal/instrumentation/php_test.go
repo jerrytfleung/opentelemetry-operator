@@ -28,11 +28,7 @@ func TestInjectPhpSDK(t *testing.T) {
 			Php:  v1alpha1.Php{Image: "foo/bar:1"},
 			pod: corev1.Pod{
 				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Image: "bar/foo:1",
-						},
-					},
+					Containers: []corev1.Container{{}},
 				},
 			},
 			expected: corev1.Pod{
@@ -58,23 +54,39 @@ func TestInjectPhpSDK(t *testing.T) {
 					InitContainers: []corev1.Container{
 						{
 							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "bar/foo:1",
+							Image:   "",
 							Command: []string{"/bin/sh", "-c"},
 							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpInstrMountPath,
+								MountPath: phpCloneMountPath,
 							}},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
 						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
 							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-php",
-								MountPath: phpInstrMountPath,
-							}},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-clone",
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
 						},
 					},
 					Containers: []corev1.Container{
