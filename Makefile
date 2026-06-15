@@ -12,6 +12,7 @@ TARGETALLOCATOR_VERSION ?= $(shell awk -F= '/^targetallocator=/ {print $$2}' ver
 OPERATOR_OPAMP_BRIDGE_VERSION ?= "$(shell awk -F= '/^operator-opamp-bridge/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_JAVA_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-java=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_NODEJS_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-nodejs=/ {print $$2}' versions.txt)"
+DEFAULT_INSTRUMENTATION_PHP_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-php=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_PYTHON_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-python=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_DOTNET_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-dotnet=/ {print $$2}' versions.txt)"
 DEFAULT_INSTRUMENTATION_GO_VERSION ?= "$(shell awk -F= '/^autoinstrumentation-go=/ {print $$2}' versions.txt)"
@@ -21,6 +22,7 @@ DEFAULT_INSTRUMENTATION_NGINX_VERSION ?= "$(shell awk -F= '/^autoinstrumentation
 # Actual versions used for publishing instrumentation images
 INSTRUMENTATION_JAVA_VERSION ?= "$(shell cat autoinstrumentation/java/version.txt)"
 INSTRUMENTATION_NODEJS_VERSION ?= "$(shell grep -o '"@opentelemetry/auto-instrumentations-node": "[^"]*' autoinstrumentation/nodejs/package.json | cut -d'"' -f4)"
+INSTRUMENTATION_PHP_VERSION ?= "$(shell cat autoinstrumentation/php/version.txt)"
 INSTRUMENTATION_PYTHON_VERSION ?= "$(shell grep -o '^opentelemetry-instrumentation==[^ ]*' autoinstrumentation/python/requirements.txt | cut -d'=' -f3)"
 INSTRUMENTATION_DOTNET_VERSION ?= "$(shell cat autoinstrumentation/dotnet/version.txt)"
 INSTRUMENTATION_APACHE_HTTPD_VERSION ?= "$(shell cat autoinstrumentation/apache-httpd/version.txt)"
@@ -36,6 +38,7 @@ OPERATOR_LDFLAGS ?= -X ${VERSION_PKG}.version=${VERSION}\
 	-X ${VERSION_PKG}.autoInstrumentationPython=${DEFAULT_INSTRUMENTATION_PYTHON_VERSION}\
 	-X ${VERSION_PKG}.autoInstrumentationDotNet=${DEFAULT_INSTRUMENTATION_DOTNET_VERSION}\
 	-X ${VERSION_PKG}.autoInstrumentationGo=${DEFAULT_INSTRUMENTATION_GO_VERSION}\
+	-X ${VERSION_PKG}.autoInstrumentationPhp=${DEFAULT_INSTRUMENTATION_PHP_VERSION}\
 	-X ${VERSION_PKG}.autoInstrumentationApacheHttpd=${DEFAULT_INSTRUMENTATION_APACHE_HTTPD_VERSION}\
 	-X ${VERSION_PKG}.autoInstrumentationNginx=${DEFAULT_INSTRUMENTATION_NGINX_VERSION}
 ARCH ?= $(shell go env GOARCH)
@@ -68,6 +71,9 @@ INSTRUMENTATION_JAVA_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_JAVA_IMG_REPO}:${INS
 
 INSTRUMENTATION_NODEJS_IMG_REPO ?= autoinstrumentation-nodejs
 INSTRUMENTATION_NODEJS_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_NODEJS_IMG_REPO}:${INSTRUMENTATION_NODEJS_VERSION}
+
+INSTRUMENTATION_PHP_IMG_REPO ?= autoinstrumentation-php
+INSTRUMENTATION_PHP_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_PHP_IMG_REPO}:${INSTRUMENTATION_PHP_VERSION}
 
 INSTRUMENTATION_PYTHON_IMG_REPO ?= autoinstrumentation-python
 INSTRUMENTATION_PYTHON_IMG ?= ${IMG_PREFIX}/${INSTRUMENTATION_PYTHON_IMG_REPO}:${INSTRUMENTATION_PYTHON_VERSION}
@@ -280,6 +286,7 @@ add-image-collector:
 add-instrumentation-images:
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-java-image=$(INSTRUMENTATION_JAVA_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-nodejs-image=$(INSTRUMENTATION_NODEJS_IMG)
+	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-php-image=$(INSTRUMENTATION_PHP_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-python-image=$(INSTRUMENTATION_PYTHON_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-dotnet-image=$(INSTRUMENTATION_DOTNET_IMG)
 	@$(MAKE) add-operator-arg OPERATOR_ARG=--auto-instrumentation-apache-httpd-image=$(INSTRUMENTATION_APACHE_HTTPD_IMG)
@@ -429,8 +436,19 @@ e2e-no-crds: chainsaw
 # Log operator pod information for debugging
 .PHONY: e2e-log-operator
 e2e-log-operator:
-	kubectl get pod -n opentelemetry-operator-system | grep "opentelemetry-operator" | awk '{print $$1}' | xargs -I {} kubectl logs -n opentelemetry-operator-system {} manager
+	# `-` prefix: a not-yet-started container has no logs, but that must not stop the
+	# describe/events below, which are exactly what explains why it has not started
+	# (e.g. an operator pod stuck in ContainerCreating during a deploy rollout timeout).
+	-kubectl get pod -n opentelemetry-operator-system | grep "opentelemetry-operator" | awk '{print $$1}' | xargs -I {} kubectl logs -n opentelemetry-operator-system {} manager
+	kubectl describe pod -n opentelemetry-operator-system -l app.kubernetes.io/name=opentelemetry-operator
+	kubectl get events -n opentelemetry-operator-system --sort-by=.lastTimestamp
 	kubectl get deploy -A
+
+# Fail if two chainsaw tests share a metadata.name (chainsaw renames collisions
+# to <name>#NN, which can't be traced back to a directory in JUnit/Codecov reports).
+.PHONY: check-chainsaw-test-names
+check-chainsaw-test-names:
+	./hack/check-chainsaw-test-names.sh
 
 # multi-instrumentation end-to-tests, alias to make matrix tests more convenient
 # the tests are the same, but the setup is different
@@ -486,11 +504,20 @@ e2e-metadata-filters: chainsaw
 	$(CHAINSAW) test --test-dir ./tests/e2e-metadata-filters --report-name e2e-metadata-filters
 
 # end-to-end-test for testing upgrading
+#
+# The tests in this group are run sequentially, as two ordered invocations, because
+# both manipulate the operator's lifecycle and must not run concurrently:
+#   1. upgrade-test boots on operator v0.86.0 (applied above) and its step-01 upgrades
+#      to the current build via `make deploy`.
+#   2. instrumentation-blocked-upgrade patches the operator's default-image args and
+#      restarts it; it requires the current operator, so it must run *after* upgrade-test
+#      has swapped it in.
 .PHONY: e2e-upgrade
 e2e-upgrade: undeploy chainsaw
 	kubectl apply -f ./tests/e2e-upgrade/upgrade-test/opentelemetry-operator-v0.86.0.yaml
 	go run hack/check-operator-ready.go
-	$(CHAINSAW) test --test-dir ./tests/e2e-upgrade --report-name e2e-upgrade
+	$(CHAINSAW) test --test-dir ./tests/e2e-upgrade/upgrade-test --report-name e2e-upgrade
+	$(CHAINSAW) test --test-dir ./tests/e2e-upgrade/instrumentation-blocked-upgrade --report-name e2e-instrumentation-blocked-upgrade
 
 # end-to-end tests to test crd validations
 .PHONY: e2e-crd-validations
@@ -591,6 +618,12 @@ container-instrumentation-nodejs:
 	docker build --load -t ${INSTRUMENTATION_NODEJS_IMG} autoinstrumentation/nodejs \
 		--build-arg version=${INSTRUMENTATION_NODEJS_VERSION}
 
+# Build PHP auto-instrumentation container image
+.PHONY: container-instrumentation-php
+container-instrumentation-php:
+	docker build --load -t ${INSTRUMENTATION_PHP_IMG} autoinstrumentation/php \
+		--build-arg version=${INSTRUMENTATION_PHP_VERSION}
+
 # Build Python auto-instrumentation container image
 .PHONY: container-instrumentation-python
 container-instrumentation-python:
@@ -611,14 +644,20 @@ container-instrumentation-apache-httpd:
 
 # Build all auto-instrumentation container images
 .PHONY: container-instrumentation-all
-container-instrumentation-all: container-instrumentation-java container-instrumentation-nodejs container-instrumentation-python container-instrumentation-dotnet container-instrumentation-apache-httpd
+container-instrumentation-all: container-instrumentation-java container-instrumentation-nodejs container-instrumentation-php container-instrumentation-python container-instrumentation-dotnet container-instrumentation-apache-httpd
 
 ##@ Kind Cluster
 # Start kind cluster for local development
 .PHONY: start-kind
 start-kind: kind
 ifeq (true,$(START_KIND_CLUSTER))
-	$(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config $(KIND_CONFIG) || true
+	# Tolerate a pre-existing cluster (idempotent local re-runs), but do NOT swallow a
+	# genuine creation failure with `|| true`.
+	@if $(KIND) get clusters 2>/dev/null | grep -qxF $(KIND_CLUSTER_NAME); then \
+		echo "kind cluster $(KIND_CLUSTER_NAME) already exists; skipping create"; \
+	else \
+		$(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config $(KIND_CONFIG); \
+	fi
 endif
 
 # Stop kind cluster
@@ -685,6 +724,7 @@ load-image-operator-opamp-bridge: container-operator-opamp-bridge kind
 load-images-instrumentation: container-instrumentation-all kind
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_JAVA_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_NODEJS_IMG}
+	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_PHP_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_PYTHON_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_DOTNET_IMG}
 	$(KIND) load --name $(KIND_CLUSTER_NAME) docker-image ${INSTRUMENTATION_APACHE_HTTPD_IMG}
@@ -708,7 +748,8 @@ cmctl:
 		exit 0; \
 	fi ;\
 	TMP_DIR=$$(mktemp -d) ;\
-	curl -L -o $$TMP_DIR/cmctl.tar.gz https://github.com/jetstack/cert-manager/releases/download/v$(CERTMANAGER_VERSION)/cmctl-`go env GOOS`-`go env GOARCH`.tar.gz ;\
+	curl -fSL --retry 5 --retry-delay 2 --retry-all-errors -o $$TMP_DIR/cmctl.tar.gz https://github.com/jetstack/cert-manager/releases/download/v$(CERTMANAGER_VERSION)/cmctl-`go env GOOS`-`go env GOARCH`.tar.gz ;\
+	gzip -t $$TMP_DIR/cmctl.tar.gz || { echo "ERROR: downloaded cmctl archive is corrupt or incomplete" >&2; exit 1; } ;\
 	tar xzf $$TMP_DIR/cmctl.tar.gz -C $$TMP_DIR ;\
 	[ -d bin ] || mkdir bin ;\
 	mv $$TMP_DIR/cmctl $(CMCTL) ;\
@@ -940,6 +981,7 @@ chlog-insert-components:
 	@echo "* [Node.JS - v${DEFAULT_INSTRUMENTATION_NODEJS_VERSION}](https://github.com/open-telemetry/opentelemetry-js/releases/tag/experimental%2Fv${DEFAULT_INSTRUMENTATION_NODEJS_VERSION})" >>components.md
 	@echo "* [Python - v${DEFAULT_INSTRUMENTATION_PYTHON_VERSION}](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v${DEFAULT_INSTRUMENTATION_PYTHON_VERSION})" >>components.md
 	@echo "* [Go - ${DEFAULT_INSTRUMENTATION_GO_VERSION}](https://github.com/open-telemetry/opentelemetry-go-instrumentation/releases/tag/${DEFAULT_INSTRUMENTATION_GO_VERSION})" >>components.md
+    @echo "* [PHP - ${DEFAULT_INSTRUMENTATION_PHP_VERSION}](https://packagist.org/packages/open-telemetry/ext-opentelemetry/${DEFAULT_INSTRUMENTATION_PHP_VERSION})" >>components.md
 	@echo "* [ApacheHTTPD - ${DEFAULT_INSTRUMENTATION_APACHE_HTTPD_VERSION}](https://github.com/open-telemetry/opentelemetry-cpp-contrib/releases/tag/webserver%2Fv${DEFAULT_INSTRUMENTATION_APACHE_HTTPD_VERSION})" >>components.md
 	@echo "* [Nginx - ${DEFAULT_INSTRUMENTATION_NGINX_VERSION}](https://github.com/open-telemetry/opentelemetry-cpp-contrib/releases/tag/webserver%2Fv${DEFAULT_INSTRUMENTATION_NGINX_VERSION})" >>components.md
 	@$(SED_INPLACE) '/<!-- next version -->/r ./components.md' CHANGELOG.md
@@ -1045,6 +1087,7 @@ endif
 	@echo "$(BRIDGETESTSERVER_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_JAVA_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_NODEJS_IMG)" >>$(IMAGE_LIST_FILE)
+	@echo "$(INSTRUMENTATION_PHP_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_PYTHON_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_DOTNET_IMG)" >>$(IMAGE_LIST_FILE)
 	@echo "$(INSTRUMENTATION_APACHE_HTTPD_IMG)" >>$(IMAGE_LIST_FILE)
