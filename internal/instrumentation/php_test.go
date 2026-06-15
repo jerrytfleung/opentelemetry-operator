@@ -4,6 +4,7 @@
 package instrumentation
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -197,456 +198,559 @@ func TestInjectPhpSDK(t *testing.T) {
 			},
 			err: nil,
 		},
-		//{
-		//	name: "defaults applied when no spec.env",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{{}},
-		//		},
-		//	},
-		//	platform:         "glibc",
-		//	inst:             v1alpha1.Instrumentation{},
-		//	simulateDefaults: true,
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Volumes: []corev1.Volume{{
-		//				Name: phpVolumeName,
-		//				VolumeSource: corev1.VolumeSource{
-		//					EmptyDir: &corev1.EmptyDirVolumeSource{SizeLimit: &defaultVolumeLimitSize},
-		//				},
-		//			}},
-		//			InitContainers: []corev1.Container{{
-		//				Name:         "opentelemetry-auto-instrumentation-php",
-		//				Image:        "foo/bar:1",
-		//				Command:      []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
-		//				VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: phpInstrMountPath}},
-		//			}},
-		//			Containers: []corev1.Container{{
-		//				VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: phpInstrMountPath}},
-		//				Env: []corev1.EnvVar{
-		//					{
-		//						Name: "OTEL_NODE_IP",
-		//						ValueFrom: &corev1.EnvVarSource{
-		//							FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.hostIP"},
-		//						},
-		//					},
-		//					{
-		//						Name: "OTEL_POD_IP",
-		//						ValueFrom: &corev1.EnvVarSource{
-		//							FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
-		//						},
-		//					},
-		//					{Name: phpIniScanDirEnvVarName, Value: phpIniScanDirEnvVarValue},
-		//					{Name: otelPhpAutoloadEnabledrEnvVarName, Value: otelPhpAutoloadEnabledrEnvVarValue},
-		//				},
-		//			}},
-		//		},
-		//	},
-		//	err: nil,
-		//},
-		//{
-		//	name: "PHP_INI_SCAN_DIR defined",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1", Resources: testResourceRequirements},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  "PHP_INI_SCAN_DIR",
-		//							Value: "/dir",
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	platform: "glibc",
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Volumes: []corev1.Volume{
-		//				{
-		//					Name: "opentelemetry-auto-instrumentation-php",
-		//					VolumeSource: corev1.VolumeSource{
-		//						EmptyDir: &corev1.EmptyDirVolumeSource{
-		//							SizeLimit: &defaultVolumeLimitSize,
-		//						},
-		//					},
-		//				},
-		//			},
-		//			InitContainers: []corev1.Container{
-		//				{
-		//					Name:    "opentelemetry-auto-instrumentation-php",
-		//					Image:   "foo/bar:1",
-		//					Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
-		//					VolumeMounts: []corev1.VolumeMount{{
-		//						Name:      "opentelemetry-auto-instrumentation-php",
-		//						MountPath: phpInstrMountPath,
-		//					}},
-		//					Resources: testResourceRequirements,
-		//				},
-		//			},
-		//			Containers: []corev1.Container{
-		//				{
-		//					VolumeMounts: []corev1.VolumeMount{
-		//						{
-		//							Name:      "opentelemetry-auto-instrumentation-php",
-		//							MountPath: phpInstrMountPath,
-		//						},
-		//					},
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  phpIniScanDirEnvVarName,
-		//							Value: "/dir",
-		//						},
-		//						{
-		//							Name:  otelPhpAutoloadEnabledrEnvVarName,
-		//							Value: otelPhpAutoloadEnabledrEnvVarValue,
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: nil,
-		//},
-		//{
-		//	name: "OTEL_PHP_AUTOLOAD_ENABLED defined",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  "OTEL_PHP_AUTOLOAD_ENABLED",
-		//							Value: "false",
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	platform: "glibc",
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Volumes: []corev1.Volume{
-		//				{
-		//					Name: phpVolumeName,
-		//					VolumeSource: corev1.VolumeSource{
-		//						EmptyDir: &corev1.EmptyDirVolumeSource{
-		//							SizeLimit: &defaultVolumeLimitSize,
-		//						},
-		//					},
-		//				},
-		//			},
-		//			InitContainers: []corev1.Container{
-		//				{
-		//					Name:    "opentelemetry-auto-instrumentation-php",
-		//					Image:   "foo/bar:1",
-		//					Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
-		//					VolumeMounts: []corev1.VolumeMount{{
-		//						Name:      "opentelemetry-auto-instrumentation-php",
-		//						MountPath: phpInstrMountPath,
-		//					}},
-		//				},
-		//			},
-		//			Containers: []corev1.Container{
-		//				{
-		//					VolumeMounts: []corev1.VolumeMount{
-		//						{
-		//							Name:      "opentelemetry-auto-instrumentation-php",
-		//							MountPath: phpInstrMountPath,
-		//						},
-		//					},
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  otelPhpAutoloadEnabledrEnvVarName,
-		//							Value: "false",
-		//						},
-		//						{
-		//							Name:  phpIniScanDirEnvVarName,
-		//							Value: phpIniScanDirEnvVarValue,
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: nil,
-		//},
-		//{
-		//	name: "OTHER env defined",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  "OTHER",
-		//							Value: "something",
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	platform: "glibc",
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Volumes: []corev1.Volume{
-		//				{
-		//					Name: "opentelemetry-auto-instrumentation-php",
-		//					VolumeSource: corev1.VolumeSource{
-		//						EmptyDir: &corev1.EmptyDirVolumeSource{
-		//							SizeLimit: &defaultVolumeLimitSize,
-		//						},
-		//					},
-		//				},
-		//			},
-		//			InitContainers: []corev1.Container{
-		//				{
-		//					Name:    "opentelemetry-auto-instrumentation-php",
-		//					Image:   "foo/bar:1",
-		//					Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
-		//					VolumeMounts: []corev1.VolumeMount{{
-		//						Name:      "opentelemetry-auto-instrumentation-php",
-		//						MountPath: phpInstrMountPath,
-		//					}},
-		//				},
-		//			},
-		//			Containers: []corev1.Container{
-		//				{
-		//					VolumeMounts: []corev1.VolumeMount{
-		//						{
-		//							Name:      "opentelemetry-auto-instrumentation-php",
-		//							MountPath: phpInstrMountPath,
-		//						},
-		//					},
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  "OTHER",
-		//							Value: "something",
-		//						},
-		//						{
-		//							Name:  phpIniScanDirEnvVarName,
-		//							Value: phpIniScanDirEnvVarValue,
-		//						},
-		//						{
-		//							Name:  otelPhpAutoloadEnabledrEnvVarName,
-		//							Value: otelPhpAutoloadEnabledrEnvVarValue,
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: nil,
-		//},
-		//{
-		//	name: "PHP_INI_SCAN_DIR defined as ValueFrom",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:      phpIniScanDirEnvVarName,
-		//							ValueFrom: &corev1.EnvVarSource{},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	platform: "glibc",
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:      phpIniScanDirEnvVarName,
-		//							ValueFrom: &corev1.EnvVarSource{},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: fmt.Errorf("the container defines env var value via ValueFrom, envVar: %s", phpIniScanDirEnvVarName),
-		//},
-		//{
-		//	name: "OTEL_PHP_AUTOLOAD_ENABLED defined as ValueFrom",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:      otelPhpAutoloadEnabledrEnvVarName,
-		//							ValueFrom: &corev1.EnvVarSource{},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	platform: "glibc",
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:      otelPhpAutoloadEnabledrEnvVarName,
-		//							ValueFrom: &corev1.EnvVarSource{},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: fmt.Errorf("the container defines env var value via ValueFrom, envVar: %s", otelPhpAutoloadEnabledrEnvVarName),
-		//},
-		//{
-		//	name: "OTHER defined as ValueFrom",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Containers: []corev1.Container{
-		//				{
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name: "OTHER",
-		//							ValueFrom: &corev1.EnvVarSource{
-		//								FieldRef: &corev1.ObjectFieldSelector{
-		//									FieldPath: "metadata.name",
-		//								},
-		//							},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Volumes: []corev1.Volume{
-		//				{
-		//					Name: phpVolumeName,
-		//					VolumeSource: corev1.VolumeSource{
-		//						EmptyDir: &corev1.EmptyDirVolumeSource{
-		//							SizeLimit: &defaultVolumeLimitSize,
-		//						},
-		//					},
-		//				},
-		//			},
-		//			InitContainers: []corev1.Container{
-		//				{
-		//					Name:    "opentelemetry-auto-instrumentation-php",
-		//					Image:   "foo/bar:1",
-		//					Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
-		//					VolumeMounts: []corev1.VolumeMount{{
-		//						Name:      "opentelemetry-auto-instrumentation-php",
-		//						MountPath: phpInstrMountPath,
-		//					}},
-		//				},
-		//			},
-		//			Containers: []corev1.Container{
-		//				{
-		//					VolumeMounts: []corev1.VolumeMount{
-		//						{
-		//							Name:      "opentelemetry-auto-instrumentation-php",
-		//							MountPath: phpInstrMountPath,
-		//						},
-		//					},
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name: "OTHER",
-		//							ValueFrom: &corev1.EnvVarSource{
-		//								FieldRef: &corev1.ObjectFieldSelector{
-		//									FieldPath: "metadata.name",
-		//								},
-		//							},
-		//						},
-		//						{
-		//							Name:  phpIniScanDirEnvVarName,
-		//							Value: phpIniScanDirEnvVarValue,
-		//						},
-		//						{
-		//							Name:  otelPhpAutoloadEnabledrEnvVarName,
-		//							Value: otelPhpAutoloadEnabledrEnvVarValue,
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: nil,
-		//},
-		//{
-		//	name: "inject into init container",
-		//	Php:  v1alpha1.Php{Image: "foo/bar:1"},
-		//	pod: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			InitContainers: []corev1.Container{
-		//				{
-		//					Name: "my-init",
-		//				},
-		//			},
-		//		},
-		//	},
-		//	expected: corev1.Pod{
-		//		Spec: corev1.PodSpec{
-		//			Volumes: []corev1.Volume{
-		//				{
-		//					Name: phpVolumeName,
-		//					VolumeSource: corev1.VolumeSource{
-		//						EmptyDir: &corev1.EmptyDirVolumeSource{
-		//							SizeLimit: &defaultVolumeLimitSize,
-		//						},
-		//					},
-		//				},
-		//			},
-		//			InitContainers: []corev1.Container{
-		//				{
-		//					Name:    "opentelemetry-auto-instrumentation-php",
-		//					Image:   "foo/bar:1",
-		//					Command: []string{"cp", "-r", glibcLinuxPhpAutoInstrumentationSrc, phpInstrMountPath},
-		//					VolumeMounts: []corev1.VolumeMount{{
-		//						Name:      "opentelemetry-auto-instrumentation-php",
-		//						MountPath: phpInstrMountPath,
-		//					}},
-		//				},
-		//				{
-		//					Name: "my-init",
-		//					VolumeMounts: []corev1.VolumeMount{
-		//						{
-		//							Name:      "opentelemetry-auto-instrumentation-php",
-		//							MountPath: phpInstrMountPath,
-		//						},
-		//					},
-		//					Env: []corev1.EnvVar{
-		//						{
-		//							Name:  phpIniScanDirEnvVarName,
-		//							Value: phpIniScanDirEnvVarValue,
-		//						},
-		//						{
-		//							Name:  otelPhpAutoloadEnabledrEnvVarName,
-		//							Value: otelPhpAutoloadEnabledrEnvVarValue,
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//	err: nil,
-		//},
+		{
+			name: "defaults applied when no spec.env",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
+				},
+			},
+			inst:             v1alpha1.Instrumentation{},
+			simulateDefaults: true,
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    "opentelemetry-auto-instrumentation-clone",
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      "opentelemetry-auto-instrumentation-clone",
+								MountPath: phpCloneMountPath,
+							}},
+						},
+						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-clone",
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{{
+						VolumeMounts: []corev1.VolumeMount{{Name: phpVolumeName, MountPath: phpInstrMountPath}},
+						Env: []corev1.EnvVar{
+							{
+								Name: "OTEL_NODE_IP",
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.hostIP"},
+								},
+							},
+							{
+								Name: "OTEL_POD_IP",
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
+								},
+							},
+							{Name: phpIniScanDirEnvVarName, Value: phpIniScanDirEnvVarValue},
+							{Name: otelPhpAutoloadEnabledrEnvVarName, Value: otelPhpAutoloadEnabledrEnvVarValue},
+						},
+					}},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "PHP_INI_SCAN_DIR defined",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:  "PHP_INI_SCAN_DIR",
+									Value: "/dir",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    "opentelemetry-auto-instrumentation-clone",
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      "opentelemetry-auto-instrumentation-clone",
+								MountPath: phpCloneMountPath,
+							}},
+						},
+						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-clone",
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: "/dir",
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "OTEL_PHP_AUTOLOAD_ENABLED defined",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:  "OTEL_PHP_AUTOLOAD_ENABLED",
+									Value: "false",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    "opentelemetry-auto-instrumentation-clone",
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      "opentelemetry-auto-instrumentation-clone",
+								MountPath: phpCloneMountPath,
+							}},
+						},
+						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-clone",
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: "false",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "OTHER env defined",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:  "OTHER",
+									Value: "something",
+								},
+							},
+						},
+					},
+				},
+			},
+			platform: "glibc",
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    "opentelemetry-auto-instrumentation-clone",
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      "opentelemetry-auto-instrumentation-clone",
+								MountPath: phpCloneMountPath,
+							}},
+						},
+						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-clone",
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "OTHER",
+									Value: "something",
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "PHP_INI_SCAN_DIR defined as ValueFrom",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:      phpIniScanDirEnvVarName,
+									ValueFrom: &corev1.EnvVarSource{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:      phpIniScanDirEnvVarName,
+									ValueFrom: &corev1.EnvVarSource{},
+								},
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("the container defines env var value via ValueFrom, envVar: %s", phpIniScanDirEnvVarName),
+		},
+		{
+			name: "OTEL_PHP_AUTOLOAD_ENABLED defined as ValueFrom",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:      otelPhpAutoloadEnabledrEnvVarName,
+									ValueFrom: &corev1.EnvVarSource{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name:      otelPhpAutoloadEnabledrEnvVarName,
+									ValueFrom: &corev1.EnvVarSource{},
+								},
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("the container defines env var value via ValueFrom, envVar: %s", otelPhpAutoloadEnabledrEnvVarName),
+		},
+		{
+			name: "OTHER defined as ValueFrom",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTHER",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+						{
+							Name: phpCloneVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    "opentelemetry-auto-instrumentation-clone",
+							Image:   "",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      "opentelemetry-auto-instrumentation-clone",
+								MountPath: phpCloneMountPath,
+							}},
+						},
+						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-clone",
+									MountPath: phpCloneMountPath,
+								},
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      phpVolumeName,
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTHER",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "inject into init container",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{
+						{
+							Name: "my-init",
+						},
+					},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{
+						{
+							Name: "my-init",
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
 	}
 
 	injector := sdkInjector{}
