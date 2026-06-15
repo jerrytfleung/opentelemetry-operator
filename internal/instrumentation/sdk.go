@@ -146,10 +146,12 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 					i.injectCommonEnvVar(otelinst, container)
 					i.injectDefaultPhpEnvVars(container)
 					pod = i.injectCommonSDKConfig(ctx, otelinst, ns, pod, container, container)
+					pod = injectPhpSDKToPodByContainer(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
+					injected = true
 				}
-				pod = injectPhpSDKToPodByContainer(otelinst.Spec.Php, pod, containers[0].Name, container, otelinst.Spec)
-				injected = true
-				break
+				if injected {
+					break
+				}
 			}
 		}
 		if injected {

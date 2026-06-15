@@ -89,7 +89,6 @@ func injectPhpSDKToPodByContainer(phpSpec v1alpha1.Php, pod corev1.Pod, firstCon
 		}
 
 		pod.Spec.InitContainers = insertInitContainer(&pod, cloneContainer, phpInitContainerName)
-
 	}
 
 	return pod
