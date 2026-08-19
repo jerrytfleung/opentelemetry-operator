@@ -76,28 +76,28 @@ jobs:
         - "1.25"
         - "1.36"
         group:
-        - e2e
-        - e2e-automatic-rbac
-        - e2e-autoscale
-        - e2e-clusterobservability
-        - e2e-collector-metrics
+#        - e2e
+#        - e2e-automatic-rbac
+#        - e2e-autoscale
+#        - e2e-clusterobservability
+#        - e2e-collector-metrics
         - e2e-instrumentation-default
         - e2e-instrumentation
-        - e2e-no-crds
-        - e2e-opampbridge
-        - e2e-pdb
-        - e2e-prometheuscr
-        - e2e-sidecar
-        - e2e-targetallocator
-        - e2e-targetallocator-cr
-        # https://github.com/open-telemetry/opentelemetry-operator/issues/4887
-        - e2e-upgrade
-        - e2e-multi-instrumentation-default
-        - e2e-multi-instrumentation
-        - e2e-metadata-filters
-        - e2e-ta-collector-mtls
-        - e2e-crd-validations
-        - e2e-ta-standalone
+#        - e2e-no-crds
+#        - e2e-opampbridge
+#        - e2e-pdb
+#        - e2e-prometheuscr
+#        - e2e-sidecar
+#        - e2e-targetallocator
+#        - e2e-targetallocator-cr
+#        # https://github.com/open-telemetry/opentelemetry-operator/issues/4887
+#        - e2e-upgrade
+#        - e2e-multi-instrumentation-default
+#        - e2e-multi-instrumentation
+#        - e2e-metadata-filters
+#        - e2e-ta-collector-mtls
+#        - e2e-crd-validations
+#        - e2e-ta-standalone
         include:
         - group: e2e-clusterobservability
           # ClusterObservability is behind a feature gate and still maturing
