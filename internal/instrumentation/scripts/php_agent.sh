@@ -21,4 +21,3 @@ standard_c_lib=$(cat "$clone"/standard_c_lib.txt)
 
 cp -rf "$instrumentation_src"/"$api"/"$standard_c_lib"/"$thread_safety"/* "$mounted_dir"/
 cp -rf "$instrumentation_src"/opentelemetry.ini "$mounted_dir"/
-cp -rf "$instrumentation_src"/version.txt "$mounted_dir"/
