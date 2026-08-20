@@ -169,7 +169,7 @@ func extractElements(elements map[string]any) []string {
 	itemsMap := map[string]struct{}{}
 	var items []string
 	for key := range elements {
-		itemName, _, _ := strings.Cut(key, "/")
+		itemName := strings.SplitN(key, "/", 2)[0]
 		itemsMap[itemName] = struct{}{}
 	}
 	for key := range itemsMap {
