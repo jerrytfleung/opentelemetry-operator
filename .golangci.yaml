@@ -202,7 +202,6 @@ formatters:
     gofmt:
       simplify: true
     gofumpt:
-      extra:
-        group-params: true
+      extra-rules: true
   exclusions:
     generated: lax
