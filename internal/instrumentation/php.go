@@ -4,6 +4,8 @@
 package instrumentation
 
 import (
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
@@ -89,6 +91,36 @@ func injectPhpSDKToPodByContainer(phpSpec v1alpha1.Php, pod corev1.Pod, firstCon
 		}
 
 		pod.Spec.InitContainers = insertInitContainer(&pod, cloneContainer, phpInitContainerName)
+	}
+
+	return pod
+}
+
+func injectPhpSDKToPodByContainerManual(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, instSpec v1alpha1.InstrumentationSpec, platform string, apiVersion string, threadSafety string) corev1.Pod {
+	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
+
+	ts := "non-zts"
+	if strings.ToLower(threadSafety) == "true" {
+		ts = "zts"
+	}
+	// init container
+	if isInitContainerMissing(pod, phpInitContainerName) {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+
+		initContainer := corev1.Container{
+			Name:      phpInitContainerName,
+			Image:     phpSpec.Image,
+			Command:   []string{"/bin/sh", "-c"},
+			Args:      []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, platform, apiVersion, ts},
+			Resources: phpSpec.Resources,
+			VolumeMounts: []corev1.VolumeMount{{
+				Name:      volume.Name,
+				MountPath: phpInstrMountPath,
+			}},
+			ImagePullPolicy: instSpec.ImagePullPolicy,
+		}
+
+		pod.Spec.InitContainers = insertInitContainer(&pod, initContainer, firstContainerName)
 	}
 
 	return pod
