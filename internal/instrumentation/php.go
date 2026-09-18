@@ -98,7 +98,9 @@ func injectPhpSDKToPodByContainer(phpSpec v1alpha1.Php, pod corev1.Pod, firstCon
 
 func injectPhpSDKToPodByContainerManual(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, instSpec v1alpha1.InstrumentationSpec, platform string, apiVersion string, threadSafety string) corev1.Pod {
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
-
+	if len(platform) == 0 {
+		platform = "glibc"
+	}
 	ts := "non-zts"
 	if strings.ToLower(threadSafety) == "true" {
 		ts = "zts"
