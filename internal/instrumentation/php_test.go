@@ -751,7 +751,6 @@ func TestInjectPhpSDK(t *testing.T) {
 			},
 			err: nil,
 		},
-
 	}
 
 	injector := sdkInjector{}

@@ -96,7 +96,7 @@ func injectPhpSDKToPodByContainer(phpSpec v1alpha1.Php, pod corev1.Pod, firstCon
 	return pod
 }
 
-func injectPhpSDKToPodByContainerManual(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, instSpec v1alpha1.InstrumentationSpec, platform string, apiVersion string, threadSafety string) corev1.Pod {
+func injectPhpSDKToPodByContainerManual(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, instSpec v1alpha1.InstrumentationSpec, platform, apiVersion, threadSafety string) corev1.Pod {
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
 	if platform == "" {
 		platform = "glibc"
