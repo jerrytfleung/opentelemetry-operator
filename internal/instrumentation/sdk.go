@@ -130,6 +130,10 @@ func (i *sdkInjector) injectPhp(ctx context.Context, inst instrumentationWithCon
 	otelinst := *inst.Instrumentation
 	i.logger.V(1).Info("injecting PHP instrumentation into pod", "otelinst-namespace", otelinst.Namespace, "otelinst-name", otelinst.Name)
 
+	autoDetect := inst.AdditionalAnnotations[annotationPhpAutoDetect]
+	platform := inst.AdditionalAnnotations[annotationPhpPlatform]
+	apiVersion := inst.AdditionalAnnotations[annotationPhpApiVersion]
+	threadSafety := inst.AdditionalAnnotations[annotationPhpThreadSafety]
 	containers := containersToInstrument(&inst, &pod)
 
 	if len(containers) > 0 {
