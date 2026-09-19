@@ -1296,7 +1296,8 @@ func TestMutatePod(t *testing.T) {
 			pod: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp: "true",
+						annotationInjectPhp:     "true",
+						annotationPhpAutoDetect: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1310,7 +1311,8 @@ func TestMutatePod(t *testing.T) {
 			expected: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp: "true",
+						annotationInjectPhp:     "true",
+						annotationPhpAutoDetect: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1513,6 +1515,7 @@ func TestMutatePod(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						annotationInjectPhp:           "true",
+						annotationPhpAutoDetect:       "true",
 						annotationInjectContainerName: "app1,app2",
 					},
 				},
@@ -1531,6 +1534,7 @@ func TestMutatePod(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						annotationInjectPhp:           "true",
+						annotationPhpAutoDetect:       "true",
 						annotationInjectContainerName: "app1,app2",
 					},
 				},
@@ -1717,7 +1721,8 @@ func TestMutatePod(t *testing.T) {
 			pod: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp: "true",
+						annotationInjectPhp:     "true",
+						annotationPhpAutoDetect: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1731,7 +1736,8 @@ func TestMutatePod(t *testing.T) {
 			expected: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp: "true",
+						annotationInjectPhp:     "true",
+						annotationPhpAutoDetect: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -4153,6 +4159,7 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
+						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -4203,6 +4210,7 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
+						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -5074,6 +5082,7 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
+						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -5131,6 +5140,7 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
+						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -5257,11 +5267,12 @@ func TestMutatePod(t *testing.T) {
 			pod: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectDotNet: "true",
-						annotationInjectJava:   "true",
-						annotationInjectNodeJS: "true",
-						annotationInjectPhp:    "true",
-						annotationInjectPython: "true",
+						annotationInjectDotNet:  "true",
+						annotationInjectJava:    "true",
+						annotationInjectNodeJS:  "true",
+						annotationInjectPhp:     "true",
+						annotationPhpAutoDetect: "true",
+						annotationInjectPython:  "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -5308,11 +5319,12 @@ func TestMutatePod(t *testing.T) {
 			expected: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectDotNet: "true",
-						annotationInjectJava:   "true",
-						annotationInjectNodeJS: "true",
-						annotationInjectPhp:    "true",
-						annotationInjectPython: "true",
+						annotationInjectDotNet:  "true",
+						annotationInjectJava:    "true",
+						annotationInjectNodeJS:  "true",
+						annotationInjectPhp:     "true",
+						annotationPhpAutoDetect: "true",
+						annotationInjectPython:  "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -5905,6 +5917,7 @@ func TestPhpContainerAnnotationsDuplicateDetection(t *testing.T) {
 			name: "php with common container-names only",
 			annotations: map[string]string{
 				annotationInjectPhp:           "true",
+				annotationPhpAutoDetect:       "true",
 				annotationInjectContainerName: "initContainer",
 			},
 			expectedContainers: []string{"initContainer"},
@@ -5913,6 +5926,7 @@ func TestPhpContainerAnnotationsDuplicateDetection(t *testing.T) {
 			name: "php with both common container names",
 			annotations: map[string]string{
 				annotationInjectPhp:               "true",
+				annotationPhpAutoDetect:           "true",
 				annotationInjectContainerName:     "initContainer",
 				annotationInjectPhpContainersName: "initContainer",
 			},
