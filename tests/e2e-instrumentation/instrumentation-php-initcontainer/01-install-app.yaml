@@ -6,6 +6,7 @@ metadata:
     app: my-php-initcontainer
   annotations:
     instrumentation.opentelemetry.io/inject-php: "true"
+    instrumentation.opentelemetry.io/otel-php-auto-detect: "true"
     instrumentation.opentelemetry.io/container-names: "php-init"
 spec:
   securityContext:
