@@ -6,7 +6,7 @@ metadata:
 spec:
   bindings:
     - name: podLabelSelector
-      value: app=my-php
+      value: app=my-php-manual
     - name: appPort
       value: "8080"
     - name: appPath
@@ -46,7 +46,7 @@ spec:
         file: 01-assert.yaml
     catch:
       - podLogs:
-          selector: app=my-php
+          selector: app=my-php-manual
   - name: Make a request to the app
     use:
       template: ../../step-templates/app-http-request.yaml
