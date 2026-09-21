@@ -1,7 +1,7 @@
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
-  name: php
+  name: php-manual
 spec:
   env:
     - name: OTEL_EXPORTER_OTLP_TIMEOUT
