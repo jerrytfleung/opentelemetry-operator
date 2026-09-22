@@ -1,15 +1,15 @@
 #!/bin/sh
 # Init container script for PHP auto-instrumentation.
 # Runs in the opentelemetry-auto-instrumentation-php init container (the one with the
-# instrumentation image), after the opentelemetry-auto-instrumentation-clone-php init
-# container has staged the PHP API version, PHP extension directory, glibc / musl
-# standard C library and thread safety into the shared volume.
+# instrumentation image)
 set -e
 
 # Inputs:
 #   $1 - Instrumentation source directory containing subdirectories for each API version and standard C library variant, with the compiled agent extensions inside (e.g. /autoinstrumentation/20240924/glibc/non-zts).
-#   $2 - Directory containing detected PHP API version, PHP extension directory, glibc / musl standard C library and thread safety (e.g. /otel-auto-instrumentation-php-clone).
-#   $3 - Directory where the agent extensions should be copied to (e.g. /otel-auto-instrumentation-php).
+#   $2 - Directory where the agent extensions should be copied to (e.g. /otel-auto-instrumentation-php).
+#   $3 - Standard C library variant (e.g. glibc or musl).
+#   $4 - PHP API version (e.g. 20240924).
+#   $5 - Thread safety (e.g. non-zts).
 
 instrumentation_src="$1"
 mounted_dir="$2"
