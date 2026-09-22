@@ -1244,13 +1244,13 @@ func TestMutatePod(t *testing.T) {
 			name: "php injection, default, true",
 			ns: corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "php",
+					Name: "php-default",
 				},
 			},
 			inst: v1alpha1.Instrumentation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "example-inst",
-					Namespace: "php",
+					Namespace: "php-default",
 				},
 				Spec: v1alpha1.InstrumentationSpec{
 					Php: v1alpha1.Php{
@@ -1422,7 +1422,7 @@ func TestMutatePod(t *testing.T) {
 								},
 								{
 									Name:  "OTEL_RESOURCE_ATTRIBUTES",
-									Value: "k8s.container.name=app,k8s.namespace.name=php,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=php.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).app,service.namespace=php",
+									Value: "k8s.container.name=app,k8s.namespace.name=php-default,k8s.node.name=$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME),k8s.pod.name=$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME),service.instance.id=php-default.$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME).app,service.namespace=php-default",
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
