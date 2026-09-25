@@ -74,6 +74,12 @@ func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, 
 
 func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName string, instSpec v1alpha1.InstrumentationSpec, platform, apiVersion, threadSafety string) corev1.Pod {
 	volume := instrVolume(phpSpec.VolumeClaimTemplate, phpVolumeName, phpSpec.VolumeSizeLimit)
+	if platform == "" {
+		platform = glibc
+	}
+	if threadSafety == "" {
+		threadSafety = nonZts
+	}
 	// init container
 	if isInitContainerMissing(pod, phpInitContainerName) {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)

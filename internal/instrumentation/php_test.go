@@ -766,6 +766,148 @@ func TestInjectPhpSDK(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			name: "platform and thread safety default value",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
+				},
+			},
+			apiVersion: Php81ApiVersion,
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php81ApiVersion, nonZts},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "apiVersion not defined",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
+				},
+			},
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
+				},
+			},
+			err: fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-api-version annotation value '' is not supported"),
+		},
+		{
+			name: "Unsupported platform value",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
+				},
+			},
+			platform:   "windows",
+			apiVersion: Php81ApiVersion,
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
+				},
+			},
+			err: fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-platform annotation value '%s' is not supported", "windows"),
+		},
+		{
+			name: "Unsupported apiVersion value",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
+				},
+			},
+			apiVersion: "invalid",
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
+				},
+			},
+			err: fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-api-version annotation value '%s' is not supported", "invalid"),
+		},
+		{
+			name: "Unsupported thread safety value",
+			Php:  v1alpha1.Php{Image: "foo/bar:1"},
+			pod: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
+				},
+			},
+			apiVersion:   Php81ApiVersion,
+			threadSafety: "invalid",
+			expected: corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
+				},
+			},
+			err: fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-thread-safety annotation value '%s' is not supported", "invalid"),
+		},
 	}
 
 	injector := sdkInjector{}
