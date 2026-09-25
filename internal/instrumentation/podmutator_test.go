@@ -1496,8 +1496,7 @@ func TestMutatePod(t *testing.T) {
 			pod: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp:     "true",
-						annotationPhpAutoDetect: "true",
+						annotationInjectPhp: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1511,8 +1510,7 @@ func TestMutatePod(t *testing.T) {
 			expected: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp:     "true",
-						annotationPhpAutoDetect: "true",
+						annotationInjectPhp: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1525,36 +1523,14 @@ func TestMutatePod(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    phpCloneVolumeName,
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      phpCloneVolumeName,
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    phpVolumeName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      phpCloneVolumeName,
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      phpVolumeName,
 									MountPath: phpInstrMountPath,
@@ -1715,7 +1691,6 @@ func TestMutatePod(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						annotationInjectPhp:           "true",
-						annotationPhpAutoDetect:       "true",
 						annotationInjectContainerName: "app1,app2",
 					},
 				},
@@ -1734,7 +1709,6 @@ func TestMutatePod(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						annotationInjectPhp:           "true",
-						annotationPhpAutoDetect:       "true",
 						annotationInjectContainerName: "app1,app2",
 					},
 				},
@@ -1748,36 +1722,14 @@ func TestMutatePod(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    phpCloneVolumeName,
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      phpCloneVolumeName,
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    phpVolumeName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      phpCloneVolumeName,
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      phpVolumeName,
 									MountPath: phpInstrMountPath,
@@ -1921,8 +1873,7 @@ func TestMutatePod(t *testing.T) {
 			pod: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp:     "true",
-						annotationPhpAutoDetect: "true",
+						annotationInjectPhp: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1936,8 +1887,7 @@ func TestMutatePod(t *testing.T) {
 			expected: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectPhp:     "true",
-						annotationPhpAutoDetect: "true",
+						annotationInjectPhp: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -4359,7 +4309,6 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
-						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -4410,7 +4359,6 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
-						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -4439,14 +4387,6 @@ func TestMutatePod(t *testing.T) {
 						},
 						{
 							Name: phpVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
-						{
-							Name: phpCloneVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									SizeLimit: &defaultVolumeLimitSize,
@@ -4490,25 +4430,11 @@ func TestMutatePod(t *testing.T) {
 							}},
 						},
 						{
-							Name:    phpCloneContainerName,
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      phpCloneVolumeName,
-								MountPath: phpCloneMountPath,
-							}},
-						},
-						{
 							Name:    phpInitContainerName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      phpCloneVolumeName,
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      phpVolumeName,
 									MountPath: phpInstrMountPath,
@@ -5282,7 +5208,6 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
-						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -5340,7 +5265,6 @@ func TestMutatePod(t *testing.T) {
 						annotationInjectJava:                 "true",
 						annotationInjectNodeJS:               "true",
 						annotationInjectPhp:                  "true",
-						annotationPhpAutoDetect:              "true",
 						annotationInjectPython:               "true",
 						annotationInjectDotnetContainersName: "dotnet1,dotnet2",
 						annotationInjectJavaContainersName:   "java1,java2",
@@ -5467,12 +5391,11 @@ func TestMutatePod(t *testing.T) {
 			pod: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectDotNet:  "true",
-						annotationInjectJava:    "true",
-						annotationInjectNodeJS:  "true",
-						annotationInjectPhp:     "true",
-						annotationPhpAutoDetect: "true",
-						annotationInjectPython:  "true",
+						annotationInjectDotNet: "true",
+						annotationInjectJava:   "true",
+						annotationInjectNodeJS: "true",
+						annotationInjectPhp:    "true",
+						annotationInjectPython: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -5519,12 +5442,11 @@ func TestMutatePod(t *testing.T) {
 			expected: corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotationInjectDotNet:  "true",
-						annotationInjectJava:    "true",
-						annotationInjectNodeJS:  "true",
-						annotationInjectPhp:     "true",
-						annotationPhpAutoDetect: "true",
-						annotationInjectPython:  "true",
+						annotationInjectDotNet: "true",
+						annotationInjectJava:   "true",
+						annotationInjectNodeJS: "true",
+						annotationInjectPhp:    "true",
+						annotationInjectPython: "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -6117,7 +6039,6 @@ func TestPhpContainerAnnotationsDuplicateDetection(t *testing.T) {
 			name: "php with common container-names only",
 			annotations: map[string]string{
 				annotationInjectPhp:           "true",
-				annotationPhpAutoDetect:       "true",
 				annotationInjectContainerName: "initContainer",
 			},
 			expectedContainers: []string{"initContainer"},
@@ -6126,7 +6047,6 @@ func TestPhpContainerAnnotationsDuplicateDetection(t *testing.T) {
 			name: "php with both common container names",
 			annotations: map[string]string{
 				annotationInjectPhp:               "true",
-				annotationPhpAutoDetect:           "true",
 				annotationInjectContainerName:     "initContainer",
 				annotationInjectPhpContainersName: "initContainer",
 			},

@@ -9,7 +9,7 @@ set -e
 #   $2 - Directory where the agent extensions should be copied to (e.g. /otel-auto-instrumentation-php).
 #   $3 - Standard C library variant (e.g. glibc or musl).
 #   $4 - PHP API version (e.g. 20240924).
-#   $5 - Thread safety (e.g. non-zts).
+#   $5 - Thread safety (e.g. non-zts or zts).
 
 instrumentation_src="$1"
 mounted_dir="$2"

@@ -19,6 +19,8 @@ func TestInjectPhpSDK(t *testing.T) {
 		v1alpha1.Php
 		pod              corev1.Pod
 		platform         string
+		apiVersion       string
+		threadSafety     string
 		expected         corev1.Pod
 		err              error
 		inst             v1alpha1.Instrumentation
@@ -32,6 +34,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					Containers: []corev1.Container{{}},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php84ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -43,39 +48,27 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php84ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -125,36 +118,14 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
@@ -219,36 +190,14 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
@@ -307,36 +256,14 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
@@ -396,36 +323,14 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
@@ -486,36 +391,14 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
@@ -649,36 +532,14 @@ func TestInjectPhpSDK(t *testing.T) {
 								},
 							},
 						},
-						{
-							Name: phpCloneVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &defaultVolumeLimitSize,
-								},
-							},
-						},
 					},
 					InitContainers: []corev1.Container{
-						{
-							Name:    "opentelemetry-auto-instrumentation-clone",
-							Image:   "",
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpCloneScript, "--", phpCloneMountPath},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "opentelemetry-auto-instrumentation-clone",
-								MountPath: phpCloneMountPath,
-							}},
-						},
 						{
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpCloneMountPath, phpInstrMountPath},
+							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "opentelemetry-auto-instrumentation-clone",
-									MountPath: phpCloneMountPath,
-								},
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
@@ -761,7 +622,7 @@ func TestInjectPhpSDK(t *testing.T) {
 			// Collect all containers (regular first, then init)
 			containers := allPhpTestContainers(&pod)
 
-			err := injectPhpSDK(test.Php, &pod, containers, v1alpha1.InstrumentationSpec{})
+			err := injectPhpSDK(test.Php, &pod, containers, v1alpha1.InstrumentationSpec{}, test.platform, test.apiVersion, test.threadSafety)
 			if err != nil {
 				assert.Equal(t, test.expected, pod)
 				assert.Equal(t, test.err, err)
@@ -775,10 +636,6 @@ func TestInjectPhpSDK(t *testing.T) {
 				injector.injectDefaultPhpEnvVars(&pod.Spec.Containers[i])
 			}
 			for i := range pod.Spec.InitContainers {
-				// Skip the instrumentation init containers we added
-				if pod.Spec.InitContainers[i].Name == phpInitContainerName || pod.Spec.InitContainers[i].Name == phpCloneContainerName {
-					continue
-				}
 				if test.simulateDefaults {
 					injector.injectCommonEnvVar(test.inst, &pod.Spec.InitContainers[i])
 				}
