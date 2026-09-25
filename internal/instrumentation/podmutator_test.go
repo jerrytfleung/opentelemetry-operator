@@ -1335,7 +1335,7 @@ func TestMutatePod(t *testing.T) {
 							Name:    phpVolumeName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "musl", "20250925", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "musl", "20250925", "non-zts"},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      phpVolumeName,
@@ -1529,7 +1529,7 @@ func TestMutatePod(t *testing.T) {
 							Name:    phpVolumeName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      phpVolumeName,
@@ -1728,7 +1728,7 @@ func TestMutatePod(t *testing.T) {
 							Name:    phpVolumeName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      phpVolumeName,
@@ -4433,7 +4433,7 @@ func TestMutatePod(t *testing.T) {
 							Name:    phpInitContainerName,
 							Image:   "otel/php:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "", "", ""},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      phpVolumeName,

@@ -35,7 +35,7 @@ func TestInjectPhpSDK(t *testing.T) {
 				},
 			},
 			platform:     glibc,
-			apiVersion:   Php84ApiVersion,
+			apiVersion:   Php81ApiVersion,
 			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
@@ -54,7 +54,7 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php84ApiVersion, nonZts},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php81ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
@@ -105,6 +105,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					Containers: []corev1.Container{{}},
 				},
 			},
+			platform:         musl,
+			apiVersion:       Php81ApiVersion,
+			threadSafety:     nonZts,
 			inst:             v1alpha1.Instrumentation{Spec: v1alpha1.InstrumentationSpec{Env: []corev1.EnvVar{{Name: phpIniScanDirEnvVarName, Value: "none"}, {Name: otelPhpAutoloadEnabledrEnvVarName, Value: "false"}}}},
 			simulateDefaults: true,
 			expected: corev1.Pod{
@@ -124,11 +127,33 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, musl, Php81ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.hostIP"},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
+									},
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: "none",
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: "false",
 								},
 							},
 						},
@@ -177,6 +202,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					Containers: []corev1.Container{{}},
 				},
 			},
+			platform:         glibc,
+			apiVersion:       Php82ApiVersion,
+			threadSafety:     nonZts,
 			inst:             v1alpha1.Instrumentation{},
 			simulateDefaults: true,
 			expected: corev1.Pod{
@@ -196,11 +224,33 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php82ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name: "OTEL_NODE_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.hostIP"},
+									},
+								},
+								{
+									Name: "OTEL_POD_IP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
+									},
+								},
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -220,8 +270,14 @@ func TestInjectPhpSDK(t *testing.T) {
 									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
 								},
 							},
-							{Name: phpIniScanDirEnvVarName, Value: phpIniScanDirEnvVarValue},
-							{Name: otelPhpAutoloadEnabledrEnvVarName, Value: otelPhpAutoloadEnabledrEnvVarValue},
+							{
+								Name:  phpIniScanDirEnvVarName,
+								Value: phpIniScanDirEnvVarValue,
+							},
+							{
+								Name:  otelPhpAutoloadEnabledrEnvVarName,
+								Value: otelPhpAutoloadEnabledrEnvVarValue,
+							},
 						},
 					}},
 				},
@@ -245,6 +301,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php81ApiVersion,
+			threadSafety: zts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -262,11 +321,21 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php81ApiVersion, zts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -312,6 +381,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php83ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -329,11 +401,21 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php83ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -379,7 +461,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
-			platform: "glibc",
+			platform:     glibc,
+			apiVersion:   Php84ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -397,11 +481,21 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php84ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -451,6 +545,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php81ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -484,6 +581,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php81ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -521,6 +621,9 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php85ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -538,11 +641,21 @@ func TestInjectPhpSDK(t *testing.T) {
 							Name:    "opentelemetry-auto-instrumentation-php",
 							Image:   "foo/bar:1",
 							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, "glibc", "20240924", "non-zts"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php85ApiVersion, nonZts},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "opentelemetry-auto-instrumentation-php",
 									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
 								},
 							},
 						},
@@ -591,11 +704,52 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
+			platform:     glibc,
+			apiVersion:   Php85ApiVersion,
+			threadSafety: nonZts,
 			expected: corev1.Pod{
 				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name: phpVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &defaultVolumeLimitSize,
+								},
+							},
+						},
+					},
 					InitContainers: []corev1.Container{
 						{
+							Name:    "opentelemetry-auto-instrumentation-php",
+							Image:   "foo/bar:1",
+							Command: []string{"/bin/sh", "-c"},
+							Args:    []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, glibc, Php85ApiVersion, nonZts},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  phpIniScanDirEnvVarName,
+									Value: phpIniScanDirEnvVarValue,
+								},
+								{
+									Name:  otelPhpAutoloadEnabledrEnvVarName,
+									Value: otelPhpAutoloadEnabledrEnvVarValue,
+								},
+							},
+						},
+						{
 							Name: "my-init",
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "opentelemetry-auto-instrumentation-php",
+									MountPath: phpInstrMountPath,
+								},
+							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  phpIniScanDirEnvVarName,

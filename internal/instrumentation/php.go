@@ -82,7 +82,7 @@ func injectPhpSDKToPod(phpSpec v1alpha1.Php, pod corev1.Pod, firstContainerName 
 			Name:      phpInitContainerName,
 			Image:     phpSpec.Image,
 			Command:   []string{"/bin/sh", "-c"},
-			Args:      []string{phpAgentManualScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, platform, apiVersion, threadSafety},
+			Args:      []string{phpAgentScript, "--", linuxPhpAutoInstrumentationSrc, phpInstrMountPath, platform, apiVersion, threadSafety},
 			Resources: phpSpec.Resources,
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      volume.Name,
