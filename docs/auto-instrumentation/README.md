@@ -73,6 +73,7 @@ The possible values for the annotation can be
 
 - [Java](languages/java.md)
 - [Node.js](languages/nodejs.md)
+- [PHP](languages/php.md)
 - [Python](languages/python.md)
 - [.NET](languages/dotnet.md)
 - [Go](languages/go.md)
