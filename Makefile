@@ -540,7 +540,7 @@ e2e-autoscale: chainsaw
 # the tests are the same, but the setup is different
 .PHONY: e2e-instrumentation-default
 # e2e-instrumentation-default: e2e-instrumentation
-e2e-instrumentation: chainsaw
+e2e-instrumentation-default: chainsaw
 	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation/instrumentation-php --report-name e2e-instrumentation-php
 
 # instrumentation end-to-tests

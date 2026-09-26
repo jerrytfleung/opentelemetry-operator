@@ -4,6 +4,7 @@
 package instrumentation
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -850,7 +851,7 @@ func TestInjectPhpSDK(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("provided instrumentation.opentelemetry.io/otel-php-api-version annotation value '' is not supported"),
+			err: errors.New("provided instrumentation.opentelemetry.io/otel-php-api-version annotation value '' is not supported"),
 		},
 		{
 			name: "Unsupported platform value",

@@ -38,9 +38,11 @@ const (
 	nonZts          = "non-zts"
 )
 
-var validPlatforms = []string{glibc, musl}
-var validApiVersions = []string{Php81ApiVersion, Php82ApiVersion, Php83ApiVersion, Php84ApiVersion, Php85ApiVersion}
-var validThreadSafety = []string{nonZts, zts}
+var (
+	validPlatforms    = []string{glibc, musl}
+	validApiVersions  = []string{Php81ApiVersion, Php82ApiVersion, Php83ApiVersion, Php84ApiVersion, Php85ApiVersion}
+	validThreadSafety = []string{nonZts, zts}
+)
 
 func injectPhpSDKToContainer(phpSpec v1alpha1.Php, container *corev1.Container, platform, apiVersion, threadSafety string) error {
 	err := validateContainerEnv(container.Env, phpIniScanDirEnvVarName, otelPhpAutoloadEnabledrEnvVarName)
