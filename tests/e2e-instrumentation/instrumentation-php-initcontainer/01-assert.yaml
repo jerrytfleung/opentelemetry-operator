@@ -9,6 +9,8 @@ spec:
   - name: opentelemetry-auto-instrumentation-php
   - name: php-init
     volumeMounts:
+    - mountPath: /otel-auto-instrumentation-php
+      name: opentelemetry-auto-instrumentation-php
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
   containers:
   - name: myapp
