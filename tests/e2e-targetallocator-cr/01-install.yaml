@@ -45,7 +45,7 @@ spec:
     privileged: false
     runAsGroup: 1000
     runAsUser: 1000
-  serviceAccount: cr-ta-user
+  serviceAccount: cr-targetallocator
   volumeMounts:
     - mountPath: /usr/share/testvolume
       name: testvolume

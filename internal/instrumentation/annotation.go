@@ -19,6 +19,7 @@ const (
 	annotationInjectNodeJSContainersName      = "instrumentation.opentelemetry.io/nodejs-container-names"
 	annotationInjectPhp                       = "instrumentation.opentelemetry.io/inject-php"
 	annotationInjectPhpContainersName         = "instrumentation.opentelemetry.io/php-container-names"
+	annotationPhpAutoDetect                   = "instrumentation.opentelemetry.io/otel-php-auto-detect"
 	annotationPhpPlatform                     = "instrumentation.opentelemetry.io/otel-php-platform"
 	annotationPhpApiVersion                   = "instrumentation.opentelemetry.io/otel-php-api-version"
 	annotationPhpThreadSafety                 = "instrumentation.opentelemetry.io/otel-php-thread-safety"

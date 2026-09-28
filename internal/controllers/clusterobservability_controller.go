@@ -352,7 +352,7 @@ func (r *ClusterObservabilityReconciler) SetupCaches(mgr ctrl.Manager) error {
 
 	ownedResources := r.GetOwnedResourceTypes()
 	for _, resource := range ownedResources {
-		err := mgr.GetCache().IndexField(context.Background(), resource, clusterObservabilityResourceOwnerKey, func(rawObj client.Object) []string {
+		if err := mgr.GetCache().IndexField(context.Background(), resource, clusterObservabilityResourceOwnerKey, func(rawObj client.Object) []string {
 			owner := metav1.GetControllerOf(rawObj)
 			if owner == nil {
 				return nil
@@ -362,8 +362,7 @@ func (r *ClusterObservabilityReconciler) SetupCaches(mgr ctrl.Manager) error {
 				return nil
 			}
 			return []string{owner.Name}
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 	}

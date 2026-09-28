@@ -46,45 +46,16 @@ func GenerateK8SAttrRbacRules(_ logr.Logger, config K8sAttributeConfig) ([]rbacv
 		Verbs:     []string{"get", "watch", "list"},
 	}
 
-	jobsPolicy := rbacv1.PolicyRule{
-		APIGroups: []string{"batch"},
-		Resources: []string{"jobs"},
-		Verbs:     []string{"get", "watch", "list"},
-	}
-
-	cronJobsPolicy := rbacv1.PolicyRule{
-		APIGroups: []string{"batch"},
-		Resources: []string{"cronjobs"},
-		Verbs:     []string{"get", "watch", "list"},
-	}
-
 	if len(config.Extract.Metadata) == 0 {
 		prs = append(prs, replicasetPolicy)
 	}
-
-	addedResourcs := map[string]bool{}
-	addPolicyRule := func(rule rbacv1.PolicyRule) {
-		key := rule.Resources[0]
-		if !addedResourcs[key] {
-			prs = append(prs, rule)
-			addedResourcs[key] = true
-		}
-	}
-
-	resourcePolicies := map[string][]rbacv1.PolicyRule{
-		"job":     {jobsPolicy},
-		"cronjob": {jobsPolicy, cronJobsPolicy},
-	}
-
 	addedReplicasetPolicy := false
 	for _, m := range config.Extract.Metadata {
 		metadataField := m
-		requiresReplicasetAccess := metadataField == "k8s.deployment.uid" || metadataField == "k8s.deployment.name" || metadataField == "service.name"
-		switch {
-		case requiresReplicasetAccess && !addedReplicasetPolicy:
+		if (metadataField == "k8s.deployment.uid" || metadataField == "k8s.deployment.name" || metadataField == "service.name") && !addedReplicasetPolicy {
 			prs = append(prs, replicasetPolicy)
 			addedReplicasetPolicy = true
-		case strings.Contains(metadataField, "k8s.node"):
+		} else if strings.Contains(metadataField, "k8s.node") {
 			prs = append(prs,
 				rbacv1.PolicyRule{
 					APIGroups: []string{""},
@@ -92,19 +63,7 @@ func GenerateK8SAttrRbacRules(_ logr.Logger, config K8sAttributeConfig) ([]rbacv
 					Verbs:     []string{"get", "watch", "list"},
 				},
 			)
-		case metadataField == "k8s.cronjob.uid":
-			addPolicyRule(jobsPolicy)
 		}
 	}
-
-	fieldExtractConfigs := make([]FieldExtractConfig, 0, len(config.Extract.Labels)+len(config.Extract.Annotations))
-	fieldExtractConfigs = append(fieldExtractConfigs, config.Extract.Labels...)
-	fieldExtractConfigs = append(fieldExtractConfigs, config.Extract.Annotations...)
-	for _, f := range fieldExtractConfigs {
-		for _, rule := range resourcePolicies[f.From] {
-			addPolicyRule(rule)
-		}
-	}
-
 	return prs, nil
 }
