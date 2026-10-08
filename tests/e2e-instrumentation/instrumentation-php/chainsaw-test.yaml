@@ -28,6 +28,8 @@ spec:
       value: app.kubernetes.io/name=deployment-collector
     - name: catchContainer
       value: otc-container
+    - name: ENABLE_PHP_AUTO_INSTRUMENTATION
+      value: "true"
   steps:
   - name: Add OpenShift namespace annotations
     use:
