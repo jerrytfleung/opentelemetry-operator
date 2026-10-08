@@ -540,7 +540,6 @@ e2e-instrumentation-default: e2e-instrumentation
 # instrumentation end-to-tests
 .PHONY: e2e-instrumentation
 e2e-instrumentation: chainsaw
-	ENABLE_PHP_AUTO_INSTRUMENTATION="true" \
 	$(CHAINSAW) test --test-dir ./tests/e2e-instrumentation --report-name e2e-instrumentation
 
 # no-crds end-to-tests

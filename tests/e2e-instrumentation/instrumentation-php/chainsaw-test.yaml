@@ -37,16 +37,10 @@ spec:
     - apply:
         file: 00-install-collector.yaml
     - apply:
-        bindings:
-          - name: ENABLE_PHP_AUTO_INSTRUMENTATION
-            value: true
         file: 00-install-instrumentation.yaml
   - name: Install test app
     try:
     - apply:
-        bindings:
-          - name: ENABLE_PHP_AUTO_INSTRUMENTATION
-            value: true
         file: 01-install-app.yaml
     - assert:
         file: 01-assert.yaml

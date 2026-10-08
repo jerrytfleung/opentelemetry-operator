@@ -161,7 +161,6 @@ jobs:
     - name: Run e2e tests
       env:
         KUBE_VERSION: ${{ matrix.kube-version }}
-        ENABLE_PHP_AUTO_INSTRUMENTATION: "true"
       run: |
         set -e
         make ${{ matrix.group }}
